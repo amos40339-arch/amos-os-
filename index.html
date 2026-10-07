@@ -1,0 +1,2146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0c0f">
+<meta name="description" content="Personal Life Operating System — AE Intelligence. October 7 to December 31, 2026.">
+<title>Life OS · AE Intelligence</title>
+<!-- Fonts. If offline, the page falls back to Georgia/Palatino + system sans. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   DESIGN TOKENS
+   Warm, editorial palette. Serif (Fraunces) for headings and key numbers,
+   friendly sans (Plus Jakarta Sans) for everything else. If the fonts can't
+   load (offline), it falls back to Georgia/Palatino + system sans.
+   ===================================================================== */
+:root{
+  --bg:#13120f; --surface:#1b1a17; --surface-2:#24221e; --border:#2d2b26; --border-2:#3b3832;
+  --text:#f3efe7; --muted:#aea698; --faint:#7d766a;
+  --accent:#e3b25d; --accent-ink:#1d1606; --accent-soft:rgba(227,178,93,.13);
+  --green:#7cc58a; --yellow:#e2b54a; --red:#ef7a6d; --blue:#8fb4f0; --gray:#3e3b35;
+  --radius:18px; --radius-sm:12px;
+  --font:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  --serif:"Fraunces","Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  color-scheme:dark;
+}
+:root[data-theme="light"]{
+  --bg:#f6f2ea; --surface:#fffdf8; --surface-2:#f1ece2; --border:#e7e0d3; --border-2:#d7cebf;
+  --text:#1d1a15; --muted:#6a6256; --faint:#9a9184;
+  --accent:#a8731b; --accent-ink:#ffffff; --accent-soft:rgba(168,115,27,.1);
+  --green:#2f8a46; --yellow:#a87410; --red:#c4473a; --blue:#2f6cc0; --gray:#ddd5c7;
+  color-scheme:light;
+}
+
+/* =====================================================================
+   BASE
+   ===================================================================== */
+*,*::before,*::after{box-sizing:border-box}
+*{margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15.5px;line-height:1.55;min-height:100vh;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0}
+h1{font-family:var(--serif);font-size:28px;font-weight:600;letter-spacing:-.01em;line-height:1.15}
+h2{font-size:14.5px;font-weight:650;color:var(--text);letter-spacing:0}
+h3{font-family:var(--serif);font-size:18px;font-weight:600;line-height:1.25}
+.mono{font-family:var(--font);font-variant-numeric:tabular-nums}
+.num{font-family:var(--serif);font-variant-numeric:lining-nums}
+.muted{color:var(--muted)} .faint{color:var(--faint)} .small{font-size:13px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+
+/* =====================================================================
+   LAYOUT — mobile first. Sidebar from 960px, bottom nav below that.
+   ===================================================================== */
+.app{display:flex;min-height:100vh}
+.sidebar{display:none}
+.main{flex:1;min-width:0;padding-bottom:calc(88px + env(safe-area-inset-bottom))}
+.view{max-width:1180px;margin:0 auto;padding:18px 16px;display:grid;gap:16px;outline:none}
+.grid{display:grid;gap:16px}
+.section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-top:4px}
+.section-head p{margin-top:4px}
+.greet{padding:6px 2px 2px}
+.greet p{margin-top:6px;font-size:14.5px}
+
+/* ---------- Top bar ---------- */
+.topbar{position:sticky;top:0;z-index:30;background:var(--bg);border-bottom:1px solid var(--border);padding:calc(10px + env(safe-area-inset-top)) 16px 10px}
+@supports (backdrop-filter:blur(8px)){.topbar{background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}}
+.tb-inner{max-width:1180px;margin:0 auto;display:grid;gap:8px}
+.tb-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.tb-date{font-size:13px;color:var(--muted);line-height:1.3}
+.tb-date strong{display:block;color:var(--text);font-family:var(--serif);font-size:17px;font-weight:600}
+.tb-time{font-size:20px;font-weight:600;letter-spacing:-.01em}
+.tb-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.tb-stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:6px 10px;display:flex;flex-direction:column;min-width:0}
+.tb-k{font-size:11.5px;color:var(--muted);white-space:nowrap;font-weight:500}
+.tb-v{font-family:var(--serif);font-size:20px;font-weight:600;line-height:1.2}
+.tb-quote{font-size:12.5px;color:var(--faint);font-style:italic;font-family:var(--serif)}
+.timer-pill{display:inline-flex;align-items:center;gap:8px;min-height:34px;padding:0 14px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:13px;font-weight:650;justify-self:start}
+.timer-pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.timer-pill.paused .dot{background:var(--faint)}
+
+/* ---------- Bottom nav ---------- */
+.bottomnav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(6,1fr);background:var(--surface);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom)}
+.bn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:62px;color:var(--faint);font-size:11px;font-weight:600}
+.bn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.bn.active{color:var(--accent)}
+
+/* ---------- More sheet ---------- */
+.sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:51;background:var(--surface);border-top:1px solid var(--border-2);border-radius:22px 22px 0 0;padding:14px 16px calc(18px + env(safe-area-inset-bottom))}
+.sheet-grab{width:40px;height:4px;border-radius:4px;background:var(--border-2);margin:0 auto 14px}
+.sheet-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sheet-grid button{min-height:54px;border-radius:14px;background:var(--surface-2);border:1px solid var(--border);font-weight:600;text-align:left;padding:0 16px}
+.sheet-grid button.active{border-color:var(--accent);color:var(--accent)}
+
+/* ---------- Desktop ---------- */
+@media (min-width:960px){
+  .sidebar{display:flex;flex-direction:column;gap:22px;width:240px;flex-shrink:0;position:sticky;top:0;height:100vh;border-right:1px solid var(--border);padding:24px 14px;background:var(--surface)}
+  .bottomnav,.sheet,.sheet-backdrop{display:none!important}
+  .main{padding-bottom:48px}
+  .view{padding:28px 32px;gap:18px}
+  .topbar{padding:12px 32px}
+  .tb-inner{grid-template-columns:auto auto 1fr;align-items:center;gap:20px}
+  .tb-row{justify-content:flex-start;gap:22px}
+  .tb-stats{grid-template-columns:repeat(4,minmax(92px,1fr));max-width:520px;justify-self:end;grid-column:3}
+  .tb-quote{display:none}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  h1{font-size:32px}
+}
+.brand{display:flex;align-items:center;gap:12px;padding:0 6px}
+.brand-mark{width:38px;height:38px;border-radius:12px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-family:var(--serif);font-weight:700;font-size:15px}
+.brand strong{display:block;font-family:var(--serif);font-size:17px;font-weight:600}
+.brand small{display:block;font-size:12px;color:var(--muted)}
+.side-nav{display:flex;flex-direction:column;gap:2px}
+.side-nav button{text-align:left;min-height:42px;padding:0 14px;border-radius:12px;color:var(--muted);font-weight:550;font-size:14.5px}
+.side-nav button:hover{background:var(--surface-2);color:var(--text)}
+.side-nav button.active{background:var(--accent-soft);color:var(--accent);font-weight:650}
+.side-quote{margin-top:auto;font-size:13px;color:var(--faint);padding:0 8px;line-height:1.5;font-family:var(--serif);font-style:italic}
+
+/* =====================================================================
+   COMPONENTS
+   ===================================================================== */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;min-width:0}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.card-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 18px;border-radius:12px;border:1px solid var(--border-2);background:var(--surface-2);font-weight:600;font-size:14.5px;white-space:nowrap;transition:border-color .15s,filter .15s}
+.btn:hover{border-color:var(--faint)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn-primary:hover{filter:brightness(1.06);border-color:var(--accent)}
+.btn-danger{color:var(--red)}
+.btn-ghost{background:transparent}
+.btn-sm{min-height:38px;padding:0 13px;font-size:13.5px;border-radius:10px}
+.btn:disabled{opacity:.4;cursor:not-allowed;filter:none}
+.link{color:var(--accent);font-weight:600;font-size:13.5px;min-height:32px}
+.input{width:100%;min-height:44px;padding:10px 13px;background:var(--bg);border:1px solid var(--border-2);border-radius:12px;font-size:16px;line-height:1.4}
+.input:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-soft)}
+.input:disabled{opacity:.6}
+.input-sm{min-height:38px;padding:7px 11px;font-size:15px;border-radius:10px}
+textarea.input{resize:vertical;min-height:66px}
+select.input{appearance:auto}
+input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent);flex-shrink:0;cursor:pointer}
+input[type=range]{width:100%;accent-color:var(--accent);min-height:32px}
+.lbl{display:grid;gap:6px;font-size:13.5px;font-weight:600;color:var(--muted)}
+.lbl .input{color:var(--text);font-weight:400}
+.form{display:grid;gap:13px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.check{display:flex;align-items:center;gap:10px;font-size:14.5px;color:var(--text);font-weight:500;min-height:36px;cursor:pointer}
+.badge{display:inline-flex;align-items:center;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;border:1px solid var(--border-2);color:var(--muted);white-space:nowrap}
+.bar{height:7px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .25s}
+.notice{display:grid;gap:4px;padding:15px 17px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);border-left:3px solid var(--accent)}
+.notice strong{font-family:var(--serif);font-weight:600;font-size:16px}
+.notice span{color:var(--muted);font-size:14px}
+.banner{max-width:1180px;margin:12px auto 0;padding:0 16px}
+.banner .notice{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+@media (min-width:960px){.banner{padding:0 32px}}
+.empty{color:var(--muted);font-size:14.5px;padding:6px 0}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media (min-width:640px){.stats{grid-template-columns:repeat(4,1fr)}}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:13px 15px;min-width:0}
+.stat .k{font-size:13px;color:var(--muted);font-weight:500}
+.stat .v{font-family:var(--serif);font-size:26px;font-weight:600;line-height:1.25;overflow-wrap:anywhere}
+.stat .s{font-size:12.5px;color:var(--faint)}
+details>summary{cursor:pointer;list-style:none;font-weight:600;font-size:14.5px;color:var(--muted);min-height:34px;display:flex;align-items:center;gap:6px}
+details>summary::-webkit-details-marker{display:none}
+details>summary::before{content:"›";display:inline-block;width:14px;transition:transform .15s;font-size:19px;line-height:1}
+details[open]>summary::before{transform:rotate(90deg)}
+.explain ul{padding-left:18px;margin-top:8px;display:grid;gap:5px;font-size:13.5px;color:var(--muted)}
+
+/* Schedule status colours */
+.b-pending{color:var(--muted)}
+.b-active{color:var(--blue);border-color:var(--blue)}
+.b-done{color:var(--green);border-color:var(--green)}
+.b-missed{color:var(--red);border-color:var(--red)}
+.b-overdue{color:var(--yellow);border-color:var(--yellow)}
+/* Score classification */
+.cls-ex,.cls-st{color:var(--green);border-color:var(--green)}
+.cls-de{color:var(--yellow);border-color:var(--yellow)}
+.cls-we,.cls-po{color:var(--red);border-color:var(--red)}
+
+/* ---------- Score card ---------- */
+.score-top{display:flex;align-items:baseline;gap:6px;margin-bottom:14px}
+.score-big{font-family:var(--serif);font-size:56px;font-weight:600;letter-spacing:-.02em;line-height:1}
+.score-big+span{color:var(--faint);font-size:17px;font-family:var(--serif)}
+.score-rows{display:grid;gap:10px}
+.srow{display:grid;grid-template-columns:132px 1fr 50px;align-items:center;gap:10px;font-size:14px}
+.srow .mono{text-align:right;color:var(--muted)}
+@media (min-width:960px){.srow{grid-template-columns:160px 1fr 52px}}
+.note{font-size:13.5px;color:var(--faint);margin-top:12px;font-style:italic;font-family:var(--serif)}
+
+/* ---------- Now card ---------- */
+.now-name{font-family:var(--serif);font-size:23px;font-weight:600;margin:6px 0 2px;line-height:1.2}
+.countdown{font-size:30px;font-weight:650;letter-spacing:-.01em;margin:8px 0 14px;font-variant-numeric:tabular-nums}
+.countdown.over{color:var(--yellow)}
+.next{margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:14.5px;color:var(--muted)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* ---------- Schedule ---------- */
+.blk-list{display:grid;gap:10px}
+.blk{display:grid;grid-template-columns:76px 1fr;gap:12px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--border-2);border-radius:16px;padding:14px}
+.blk.st-active{border-left-color:var(--blue)}
+.blk.st-done{border-left-color:var(--green)}
+.blk.st-missed{border-left-color:var(--red)}
+.blk.st-overdue{border-left-color:var(--yellow)}
+.blk.is-now{box-shadow:0 0 0 1px var(--accent) inset}
+.blk-time{font-size:13.5px;font-weight:650;line-height:1.4}
+.blk-time span{display:block;color:var(--faint);font-weight:500}
+.blk-body{display:grid;gap:9px;min-width:0}
+.blk-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.blk-top h3{font-size:17px}
+.blk-meta{font-size:13px;color:var(--muted)}
+.blk .countdown{font-size:21px;margin:0}
+.blk-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.blk-actions select{width:auto;flex:1;min-width:130px}
+.now-tag{display:inline-block;font-family:var(--font);font-size:10.5px;font-weight:700;letter-spacing:.04em;color:var(--accent-ink);background:var(--accent);border-radius:6px;padding:2px 7px;margin-right:8px;vertical-align:3px}
+.verdict{font-weight:650}
+.v-early{color:var(--blue)} .v-ontime{color:var(--green)} .v-late{color:var(--yellow)}
+@media (min-width:640px){.blk{grid-template-columns:96px 1fr}}
+
+/* ---------- Habits ---------- */
+.habits{display:grid;padding:4px 18px}
+.habit{display:grid;grid-template-columns:1fr 114px;gap:8px 10px;padding:13px 0;border-bottom:1px solid var(--border);align-items:center}
+.habit:last-child{border-bottom:0}
+.hcheck{display:flex;align-items:center;gap:12px;font-weight:600;min-height:40px;cursor:pointer}
+.habit.done .hcheck span{color:var(--green)}
+.hmin{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.hmin .input{text-align:right;min-height:40px;padding:6px 10px}
+.hnote{grid-column:1/-1;min-height:38px;padding:7px 11px;font-size:15px}
+@media (min-width:900px){.habit{grid-template-columns:220px 120px 1fr}.hnote{grid-column:auto}}
+.counters{display:grid;gap:10px}
+@media (min-width:640px){.counters{grid-template-columns:1fr 1fr}}
+.counter{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--surface-2);border-radius:14px;padding:11px 13px;font-weight:600;font-size:14.5px}
+.counter small{display:block;font-weight:500;font-size:12.5px}
+.stepper{display:flex;align-items:center;gap:6px}
+.stepper .btn{min-width:44px;padding:0 10px;font-size:19px}
+.stepper .btn-sm{font-size:13.5px}
+.cv{min-width:36px;text-align:center;font-family:var(--serif);font-size:22px;font-weight:600}
+
+/* ---------- Timer ---------- */
+.timer-display{font-size:clamp(46px,14vw,70px);font-weight:600;letter-spacing:-.02em;text-align:center;margin:20px 0 4px;line-height:1;font-variant-numeric:tabular-nums}
+.timer-state{text-align:center;color:var(--muted);font-size:14.5px;margin-bottom:18px}
+.timer-btns{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px}
+.timer-btns .btn{min-height:52px;font-size:15px}
+.hbars{display:grid;gap:10px}
+.hb{display:grid;grid-template-columns:122px 1fr 64px;gap:10px;align-items:center;font-size:14px}
+.hb .mono{text-align:right;color:var(--muted)}
+.list{display:grid}
+.li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border);font-size:14.5px;flex-wrap:wrap}
+.li:last-child{border-bottom:0}
+.li-main{min-width:0;flex:1}
+.li-main strong{display:block;font-weight:650}
+.li-main span{color:var(--muted);font-size:13px}
+
+/* ---------- Charts (pure CSS) ---------- */
+.chart{display:flex;align-items:flex-end;gap:6px;height:170px;padding-top:4px}
+.cb{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;min-width:0}
+.cb-v{font-size:11.5px;color:var(--muted);height:16px;white-space:nowrap}
+.cb-track{flex:1;width:100%;max-width:40px;background:var(--surface-2);border-radius:8px;display:flex;align-items:flex-end;overflow:hidden}
+.cb-track i{display:block;width:100%;background:var(--accent);border-radius:8px 8px 0 0}
+.cb.muted .cb-track{opacity:.4}
+.cb-l{font-size:11.5px;color:var(--faint);white-space:nowrap}
+
+/* ---------- History ---------- */
+.cal-month{display:grid;gap:10px}
+.cal-month h2{font-family:var(--serif);font-size:18px;font-weight:600}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.cal-h{font-size:11.5px;color:var(--faint);text-align:center}
+.cal-cell{aspect-ratio:1;border-radius:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:var(--surface-2);border:1px solid var(--border);font-size:13.5px;font-weight:650;min-width:0}
+.cal-cell .cs{font-size:11px;font-weight:600;opacity:.9}
+.cal-cell.out{visibility:hidden}
+.cal-cell:disabled{cursor:default;opacity:.45}
+.cal-cell.c-good{background:color-mix(in srgb,var(--green) 24%,var(--surface));border-color:var(--green)}
+.cal-cell.c-mid{background:color-mix(in srgb,var(--yellow) 22%,var(--surface));border-color:var(--yellow)}
+.cal-cell.c-bad{background:color-mix(in srgb,var(--red) 22%,var(--surface));border-color:var(--red)}
+.cal-cell.today{box-shadow:0 0 0 2px var(--accent)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+
+/* ---------- Mission ---------- */
+.mission-lead{font-family:var(--serif);font-size:19px;line-height:1.5}
+.mission-close{font-family:var(--serif);font-style:italic;color:var(--accent);margin-top:8px;font-size:16px}
+.mission-text{font-size:15px;line-height:1.7;display:grid;gap:10px}
+.mission-text ol{padding-left:22px;display:grid;gap:3px;color:var(--muted)}
+.mission-text .close{font-family:var(--serif);font-style:italic;font-weight:600}
+.areas{display:grid;gap:14px}
+@media (min-width:760px){.areas{grid-template-columns:1fr 1fr}}
+.area{display:grid;gap:10px}
+.cmp{display:grid;gap:12px}
+.cmp-row{display:grid;grid-template-columns:128px 1fr 48px;gap:10px;align-items:center;font-size:14px}
+.cmp-row .bar{height:10px}
+
+/* ---------- Books ---------- */
+.books{display:grid;gap:14px}
+@media (min-width:760px){.books{grid-template-columns:1fr 1fr}}
+.book{display:grid;gap:10px}
+.page-row{display:flex;align-items:center;gap:8px;font-size:14.5px;color:var(--muted)}
+.page-row .input{width:100px;min-height:38px}
+
+/* ---------- Today: client acquisition mini card ---------- */
+.minis{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
+.mini-h{display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:5px;color:var(--muted)}
+.mini-h span:last-child{color:var(--text);font-weight:650}
+.due-line{margin:14px 0 12px;font-size:14px;color:var(--muted)}
+.due-line.is-over{color:var(--red);font-weight:650}
+
+/* ---------- Client acquisition ---------- */
+.seg{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:4px;overflow-x:auto}
+.seg button{flex:1;min-height:40px;padding:0 14px;border-radius:10px;font-weight:600;font-size:14px;color:var(--muted);white-space:nowrap}
+.seg button.on{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.25)}
+@media (max-width:520px){.seg button{padding:0 9px;font-size:13.5px}}
+.seg-sm{padding:3px;border-radius:12px}
+.seg-sm button{min-height:32px;padding:0 10px;font-size:13px}
+.quick-row{display:flex;gap:8px;flex-wrap:wrap}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (min-width:760px){.tiles{grid-template-columns:repeat(3,1fr)}}
+.tile{background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:12px 13px;display:grid;gap:7px;align-content:start}
+.tile.hit{border-color:color-mix(in srgb,var(--green) 60%,transparent)}
+.tile.hit .bar>i{background:var(--green)}
+.tile-l{font-size:13px;color:var(--muted);font-weight:500;line-height:1.3}
+.tile-v{font-family:var(--serif);font-size:24px;font-weight:600;line-height:1.1;overflow-wrap:anywhere}
+.tile-v span{font-size:15px;color:var(--faint);font-weight:500}
+.tile-step{display:flex;gap:6px}
+.tile-step .btn{flex:1;min-height:34px;font-size:17px;padding:0}
+.filters{display:grid;gap:10px}
+.filter-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media (min-width:760px){.filter-grid{grid-template-columns:repeat(3,1fr)}}
+@media (min-width:1100px){.filter-grid{grid-template-columns:repeat(6,1fr)}}
+.filter-foot{display:flex;justify-content:space-between;align-items:center}
+.plist{display:grid;gap:10px}
+@media (min-width:760px){.plist{grid-template-columns:1fr 1fr}}
+.pc{display:grid;gap:6px;text-align:left;width:100%;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--border-2);border-radius:16px;padding:14px 15px;transition:border-color .15s}
+.pc:hover{border-color:var(--border-2)}
+.pc-high{border-left-color:var(--accent);background:linear-gradient(0deg,var(--accent-soft),var(--accent-soft)),var(--surface)}
+.pc-good{border-left-color:var(--green)}
+.pc-med{border-left-color:var(--blue)}
+.pc-low{border-left-color:var(--red)}
+.pc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.pc-name{font-family:var(--serif);font-size:18px;font-weight:600;line-height:1.25}
+.pc-sub{font-size:13.5px;color:var(--muted)}
+.pc-sub .hi{color:var(--accent);font-weight:700}
+.pc-foot{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:13px}
+.sp{display:inline-grid;place-items:center;min-width:34px;height:34px;padding:0 8px;border-radius:10px;font-family:var(--serif);font-weight:700;font-size:16px;background:var(--surface-2);color:var(--muted);border:1px solid var(--border-2)}
+.sp-lg{min-width:46px;height:46px;font-size:22px;border-radius:13px}
+.sp-high{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.sp-good{color:var(--green);border-color:var(--green)}
+.sp-med{color:var(--blue);border-color:var(--blue)}
+.sp-low{color:var(--red);border-color:var(--red)}
+.ps-won{color:var(--green);border-color:var(--green)}
+.ps-lost{color:var(--red);border-color:var(--red)}
+.ps-active{color:var(--blue);border-color:var(--blue)}
+.ps-later{color:var(--yellow);border-color:var(--yellow)}
+.due-over{color:var(--red);font-weight:650}
+.due-group{padding:4px 0 6px}
+.due-group+.due-group{border-top:1px solid var(--border);margin-top:4px;padding-top:10px}
+.due-h{font-size:13px;font-weight:700;color:var(--muted)}
+.due-group.is-over .due-h{color:var(--red)}
+.due-group.is-over .li-main strong{color:var(--red)}
+.funnel{display:grid;gap:2px}
+.fn-row{display:grid;grid-template-columns:96px 1fr 36px;gap:10px;align-items:center;font-size:14px}
+.fn-bar{height:22px;background:var(--surface-2);border-radius:7px;overflow:hidden}
+.fn-bar i{display:block;height:100%;background:var(--accent);border-radius:7px;opacity:.85}
+.fn-n{text-align:right;font-family:var(--serif);font-weight:600;font-size:17px}
+.fn-arrow{padding-left:40px;color:var(--faint);font-size:11px;line-height:1}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px}
+.ntable{width:100%;border-collapse:collapse;font-size:14px;min-width:560px}
+.ntable th{text-align:right;font-weight:600;color:var(--muted);font-size:12.5px;padding:8px 6px;border-bottom:1px solid var(--border)}
+.ntable td{text-align:right;padding:10px 6px;border-bottom:1px solid var(--border);font-variant-numeric:tabular-nums}
+.ntable th:first-child,.ntable td:first-child{text-align:left}
+.ntable td.top{color:var(--accent);font-weight:700}
+.leaders{display:grid;gap:8px}
+@media (min-width:640px){.leaders{grid-template-columns:1fr 1fr 1fr}}
+.leader{background:var(--surface-2);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--muted)}
+.leader strong{display:block;color:var(--text);font-family:var(--serif);font-size:16px;font-weight:600}
+
+/* Prospect detail */
+.pm-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.pm-title{font-size:24px}
+.pm-sec{border-top:1px solid var(--border);padding-top:8px}
+.pm-sec>summary{color:var(--text);font-size:15px}
+.pm-body{display:grid;gap:12px;padding:8px 0 4px}
+.ck-grid{display:grid;gap:2px}
+@media (min-width:600px){.ck-grid{grid-template-columns:1fr 1fr}}
+.lbl-row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14.5px;font-weight:500}
+.lbl-row select{width:96px}
+.oe{background:var(--surface-2);border-radius:14px;padding:12px;display:grid;gap:10px}
+.oe-h{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.oe-h strong{flex:1;font-size:14.5px}
+.oe-msg{font-size:14px;color:var(--muted);white-space:pre-wrap;border-left:2px solid var(--border-2);padding-left:10px}
+
+/* ---------- Modal ---------- */
+dialog{border:1px solid var(--border-2);background:var(--surface);color:var(--text);border-radius:20px;padding:0;width:min(600px,calc(100vw - 16px));max-height:calc(100vh - 32px);margin:auto}
+dialog::backdrop{background:rgba(0,0,0,.55)}
+.modal-body{padding:20px;display:grid;gap:14px;overflow:auto;max-height:calc(100vh - 32px)}
+.modal-actions,.modal-foot{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.modal-foot{position:sticky;bottom:-20px;background:var(--surface);margin:0 -20px -20px;padding:12px 20px calc(16px + env(safe-area-inset-bottom));border-top:1px solid var(--border)}
+.spacer{flex:1}
+
+/* ---------- Toasts ---------- */
+.toasts{position:fixed;left:12px;right:12px;bottom:calc(78px + env(safe-area-inset-bottom));z-index:60;display:grid;gap:8px;pointer-events:none}
+@media (min-width:960px){.toasts{left:auto;right:24px;bottom:24px;width:380px}}
+.toast{pointer-events:auto;background:var(--surface-2);border:1px solid var(--border-2);border-left:3px solid var(--accent);border-radius:14px;padding:12px 15px;font-size:14.5px;box-shadow:0 12px 32px rgba(0,0,0,.3)}
+.toast.error{border-left-color:var(--red)}
+.focus-list{display:grid;gap:12px}
+.focus-list div{display:grid;gap:2px}
+.focus-list dt{font-size:13px;color:var(--muted);font-weight:600}
+.focus-list dd{font-family:var(--serif);font-size:17px;font-weight:500;line-height:1.4}
+.kv{display:grid;gap:10px;font-size:14.5px}
+.kv div{display:grid;gap:2px}
+.kv b{font-size:13px;color:var(--muted);font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Desktop sidebar -->
+  <aside class="sidebar" aria-label="Main navigation">
+    <div class="brand"><span class="brand-mark">AE</span><div><strong>Life OS</strong><small>Oct 7 → Dec 31, 2026</small></div></div>
+    <nav class="side-nav" id="sideNav"></nav>
+    <p class="side-quote">Brick by brick. Do not restart. Return to the system.</p>
+  </aside>
+
+  <div class="main">
+    <!-- TODAY header: always reflects the real current day -->
+    <header class="topbar">
+      <div class="tb-inner">
+        <div class="tb-row">
+          <div class="tb-date" id="hdDate"></div>
+          <div class="tb-time mono" id="hdTime" aria-live="off"></div>
+        </div>
+        <button class="timer-pill" id="hdTimer" data-action="nav" data-view="timer" hidden></button>
+        <div class="tb-stats">
+          <div class="tb-stat"><span class="tb-k">Days left</span><span class="tb-v mono" id="hdLeft">–</span></div>
+          <div class="tb-stat"><span class="tb-k">Done</span><span class="tb-v mono" id="hdComp">–</span></div>
+          <div class="tb-stat"><span class="tb-k">Score</span><span class="tb-v mono" id="hdScore">–</span></div>
+          <div class="tb-stat"><span class="tb-k">Streak</span><span class="tb-v mono" id="hdStreak">–</span></div>
+        </div>
+        <p class="tb-quote">Brick by brick. Do not restart. Return to the system.</p>
+      </div>
+    </header>
+    <div id="banner"></div>
+    <main id="view" class="view" tabindex="-1"></main>
+  </div>
+</div>
+
+<!-- Mobile navigation -->
+<nav class="bottomnav" id="bottomNav" aria-label="Mobile navigation"></nav>
+<div class="sheet-backdrop" id="sheetBackdrop" data-action="closeSheet" hidden></div>
+<div class="sheet" id="moreSheet" hidden role="dialog" aria-label="More sections">
+  <div class="sheet-grab"></div>
+  <div class="sheet-grid" id="sheetGrid"></div>
+</div>
+
+<dialog id="modal"><div class="modal-body" id="modalBody"></div></dialog>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<input type="file" id="importFile" accept="application/json,.json" data-change="importFile" hidden>
+
+<script>
+'use strict';
+
+/* =====================================================================
+   1. CONFIG
+   Change targets here. Everything else reads from these constants.
+   ===================================================================== */
+const STORAGE_KEY   = 'aeLifeOS.v1';      // main data
+const FIRED_KEY     = 'aeLifeOS.fired';   // which reminders already fired today
+const MISSION_START = '2026-10-07';
+const MISSION_END   = '2026-12-31';
+const QUOTE         = 'Brick by brick. Do not restart. Return to the system.';
+const ANTI_RESET    = 'One bad day does not require a new beginning. Return to the system.';
+
+const MISSION = {
+  intro: 'I am building myself into a disciplined, capable, financially stronger young man who walks with God and takes responsibility for his future.',
+  evidence: 'By December 31, I want undeniable evidence that I stopped drifting and started building.',
+  lead: 'I want to become:',
+  list: [
+    'Disciplined and consistent',
+    'Stronger in my walk with God',
+    'Better at communication',
+    'Better at business and client acquisition',
+    'Much stronger at web development',
+    'Strong in Python fundamentals and practical programming',
+    'Building a serious foundation in cybersecurity',
+    'Emotionally stable and self-controlled',
+    'Financially much stronger, targeting a 20x improvement from my current baseline',
+    'Consistently reading useful books',
+    'Building a personal brand across TikTok, Instagram, Facebook, LinkedIn and X',
+    'Working toward 15,000+ followers on TikTok, Instagram and Facebook as a stretch target',
+    'Becoming capable of having a healthy relationship with a woman who genuinely shares my values and vision, if the right person enters my life'
+  ],
+  close1: 'I do not need to become perfect by December 31.',
+  close2: 'I need to prove that I stopped drifting and started building.'
+};
+
+// [start, end, name, remind]. End before start = crosses midnight (Sleep).
+const DEFAULT_SCHEDULE = [
+  ['06:00','06:15','Wake up',false],
+  ['06:15','06:45','Prayer + Bible',true],
+  ['06:45','07:15','Exercise / movement',false],
+  ['07:15','08:00','Breakfast + preparation',false],
+  ['08:00','11:00','Deep Work 1: Business / Money',true],
+  ['11:00','11:30','Break',false],
+  ['11:30','13:30','Technical Learning',true],
+  ['13:30','14:30','Lunch + Rest',false],
+  ['14:30','16:00','Deep Work 2: Clients / Money',true],
+  ['16:00','17:00','Content Creation',true],
+  ['17:00','18:00','Free / Personal',false],
+  ['18:00','19:00','Dinner / Family',false],
+  ['19:00','20:00','Reading',true],
+  ['20:00','21:00','Review + Light Learning',true],
+  ['21:00','22:00','Wind Down',true],
+  ['22:00','22:30','Prepare for sleep',true],
+  ['22:30','06:00','Sleep',false]
+];
+
+const HABITS = [
+  {key:'prayer',label:'Prayer'},{key:'bible',label:'Bible study'},{key:'exercise',label:'Exercise'},
+  {key:'deepwork',label:'Deep work'},{key:'clientwork',label:'Client work'},{key:'outreach',label:'Client outreach'},
+  {key:'python',label:'Python'},{key:'cyber',label:'Cybersecurity'},{key:'webdev',label:'Web development'},
+  {key:'ai',label:'AI automation'},{key:'content',label:'Content creation'},{key:'reading',label:'Reading'},
+  {key:'finance',label:'Financial tracking'},{key:'journal',label:'Journaling'},{key:'sleep',label:'Sleep on time'}
+];
+
+// Each timer category feeds one habit. This is the bridge that stops double entry.
+const TIMER_CATEGORIES = [
+  {key:'business',label:'Business',habit:'deepwork'},
+  {key:'client',label:'Client Work',habit:'clientwork'},
+  {key:'webdev',label:'Web Development',habit:'webdev'},
+  {key:'python',label:'Python',habit:'python'},
+  {key:'cyber',label:'Cybersecurity',habit:'cyber'},
+  {key:'ai',label:'AI Automation',habit:'ai'},
+  {key:'content',label:'Content',habit:'content'},
+  {key:'reading',label:'Reading',habit:'reading'},
+  {key:'faith',label:'Bible / Prayer',habit:'prayer'},
+  {key:'exercise',label:'Exercise',habit:'exercise'},
+  {key:'other',label:'Other',habit:null}
+];
+
+// How logged minutes are grouped in the daily breakdown. Sum = "focused minutes".
+const BREAKDOWN = [
+  {label:'Business',habits:['deepwork','outreach','finance']},
+  {label:'Client Work',habits:['clientwork']},
+  {label:'Web Development',habits:['webdev']},
+  {label:'Python',habits:['python']},
+  {label:'Cybersecurity',habits:['cyber']},
+  {label:'AI Automation',habits:['ai']},
+  {label:'Content',habits:['content']},
+  {label:'Reading',habits:['reading']},
+  {label:'Bible / Prayer',habits:['prayer','bible']},
+  {label:'Exercise',habits:['exercise']},
+  {label:'Other',habits:['journal'],other:true}
+];
+
+const REVIEW_QS = [
+  ['accomplished','What did I accomplish today?'],
+  ['failed','What did I fail to do?'],
+  ['why','Why did I fail?'],
+  ['wasted','Where did I waste time?'],
+  ['distractions','What distracted me?'],
+  ['learned','What did I learn?'],
+  ['proud','What am I proud of?'],
+  ['improve','What needs to improve tomorrow?'],
+  ['priority','What is tomorrow’s #1 priority?']
+];
+
+/* SCORING — out of 100. Every rule is calculated from what you logged.
+   ratio(value, target) returns 0..1, so each area caps at its max.        */
+const SCORING = [
+  {key:'faith',label:'Faith',max:15,rule:'Prayer + Bible minutes. Full points at 40 min.',
+    calc:d=>15*ratio(hm(d,'prayer')+hm(d,'bible'),40)},
+  {key:'career',label:'Deep Work / Career',max:20,rule:'Deep work minutes. Full points at 180 min.',
+    calc:d=>20*ratio(hm(d,'deepwork'),180)},
+  {key:'business',label:'Business / Money',max:20,rule:'Client work + outreach minutes (10 pts at 120 min) + client acquisition against your daily targets (10 pts: prospecting 3, outreach & follow-ups 4, calls & proposals 3).',
+    calc:d=>10*ratio(hm(d,'clientwork')+hm(d,'outreach'),120)+10*acqRatio(d)},
+  {key:'technical',label:'Technical Learning',max:15,rule:'Python + Cybersecurity + Web dev + AI automation minutes. Full points at 120 min.',
+    calc:d=>15*ratio(hm(d,'python')+hm(d,'cyber')+hm(d,'webdev')+hm(d,'ai'),120)},
+  {key:'content',label:'Content',max:10,rule:'Content minutes (6 pts at 60 min) + pieces published (4 pts at 1 piece).',
+    calc:d=>6*ratio(hm(d,'content'),60)+4*ratio(d.counters.content,1)},
+  {key:'health',label:'Exercise / Health',max:5,rule:'Exercise minutes. Full points at 30 min.',
+    calc:d=>5*ratio(hm(d,'exercise'),30)},
+  {key:'reading',label:'Reading',max:5,rule:'Reading minutes. Full points at 30 min.',
+    calc:d=>5*ratio(hm(d,'reading'),30)},
+  {key:'discipline',label:'Discipline / Time',max:5,rule:'Share of schedule blocks marked Completed (4 pts) + slept on time (1 pt).',
+    calc:d=>{const n=d.schedule.length,done=d.schedule.filter(b=>b.status==='done').length;return (n?4*done/n:0)+(hd(d,'sleep')?1:0);}},
+  {key:'reflection',label:'Reflection / Planning',max:5,rule:'Review questions answered (3 pts) + tomorrow’s priority set (1 pt) + journaling done (1 pt).',
+    calc:d=>{const a=REVIEW_QS.filter(([q])=>txt(d.review[q])).length;return 3*a/REVIEW_QS.length+(txt(d.review.priority)?1:0)+(hd(d,'journal')?1:0);}}
+];
+
+const MISSION_AREAS = [
+  ['discipline','Discipline','Follow the daily schedule consistently, with no multi-day drift.'],
+  ['faith','Faith','Daily prayer and Bible study. A stronger walk with God.'],
+  ['communication','Communication','Speak and write clearly with clients, on calls and on camera.'],
+  ['business','Business','Consistent client acquisition and paid projects.'],
+  ['webdev','Web Development','Much stronger web development, proven by shipped projects.'],
+  ['python','Python','Strong fundamentals and practical programs I built myself.'],
+  ['cyber','Cybersecurity','A serious foundation in cybersecurity.'],
+  ['finance','Financial Growth','20x improvement from my current baseline.'],
+  ['reading','Reading','Consistently reading useful books.'],
+  ['brand','Content / Personal Brand','Active on TikTok, Instagram, Facebook, LinkedIn and X. 15,000+ followers on TikTok, Instagram and Facebook (stretch).'],
+  ['emotional','Emotional Stability','Emotionally stable and self-controlled.'],
+  ['relationships','Relationships / Personal Life','Capable of a healthy relationship with someone who shares my values and vision.']
+];
+
+
+/* ---------- Client Acquisition config ---------- */
+const OWNER_NAME = 'Amos';
+const CRM_STATUSES = ['New','Researching','Qualified','Audited','Contacted','Replied','Call Booked','Proposal Sent','Negotiating','Won','Lost','Not a Fit','Follow Up Later'];
+const PIPE = ['New','Researching','Qualified','Audited','Contacted','Replied','Call Booked','Proposal Sent','Negotiating','Won']; // forward order
+const CLOSED = ['Won','Lost','Not a Fit'];
+// Reaching a stage stamps the date once. Some stamps also create a scoreboard event.
+const STAMP = {Qualified:'qualified',Audited:'audited',Contacted:'contacted',Replied:'replied','Call Booked':'call','Proposal Sent':'proposal',Negotiating:'negotiating',Won:'won',Lost:'lost'};
+const STAMP_EVENT = {qualified:'qualified',audited:'audited',replied:'reply',call:'call',proposal:'proposal',won:'won'};
+const STAGES = [['New',['New','Researching']],['Qualified',['Qualified']],['Audited',['Audited']],['Contacted',['Contacted']],['Replied',['Replied']],['Call',['Call Booked']],['Proposal',['Proposal Sent']],['Negotiation',['Negotiating']],['Won',['Won']]];
+const NICHES = ['Real Estate','Clinics','Logistics','Professional Services','Hotels','Restaurants','Schools','Startups','Financial Services','Other'];
+const METHODS = ['WhatsApp','Email','Instagram','LinkedIn','X','Phone','Other'];
+const RESPONSES = ['No response','Interested','Not interested','Maybe later','Call booked','Proposal requested','Won','Lost'];
+const LEAD_SOURCES = ['Google Maps','Instagram','LinkedIn','X','Referral','Website','Directory','Walk-in','Other'];
+const CRM_METRICS = [
+  {key:'researched',label:'Prospects researched',def:20},
+  {key:'qualified',label:'Qualified prospects',def:10},
+  {key:'audited',label:'Businesses audited',def:3},
+  {key:'outreach',label:'Outreach messages',def:10},
+  {key:'followup',label:'Follow-ups sent',def:10},
+  {key:'call',label:'Calls booked',def:2},
+  {key:'proposal',label:'Proposals sent',def:2},
+  {key:'won',label:'Deals closed',def:1},
+  {key:'revenue',label:'Revenue generated',def:0,money:true}
+];
+const CHECKLIST = [['websiteExists','Website exists'],['websiteWorks','Website works properly'],['mobile','Mobile experience checked'],['speed','Page speed checked'],['cta','Clear CTA'],['contact','Contact / WhatsApp accessible'],['google','Google Business presence checked'],['social','Social media checked'],['competitors','Competitors checked'],['active','Business appears active'],['dm','Decision maker identified'],['problem','Specific business problem identified'],['evidence','Evidence captured'],['solution','Potential solution identified']];
+const QUALIFY_REQUIRED = ['active','problem','solution']; // must be ticked to qualify
+const QUALIFY_MIN = 8;                                   // and at least this many in total
+const LEAD_CRITERIA = [['severity','Problem severity'],['pay','Ability to pay'],['visibility','Business visibility'],['growth','Business growth'],['urgency','Urgency'],['access','Decision maker accessible']];
+
+const STATUS_LABEL = {pending:'Not started',active:'In progress',done:'Completed',missed:'Missed',overdue:'Overdue'};
+const STATUS_OPTS  = [['pending','Not started'],['active','In progress'],['done','Completed'],['missed','Missed']];
+
+const NAV = [
+  {v:'today',l:'Today'},{v:'schedule',l:'Schedule'},{v:'habits',l:'Habits'},{v:'clients',l:'Client Acquisition',s:'Clients'},{v:'timer',l:'Timer'},
+  {v:'review',l:'Daily Review'},{v:'week',l:'Weekly Review'},{v:'history',l:'History'},
+  {v:'mission',l:'December Mission'},{v:'finance',l:'Finance'},{v:'reading',l:'Reading'},
+  {v:'journal',l:'Journal'},{v:'data',l:'Settings & Data'}
+];
+const BOTTOM = ['today','schedule','habits','clients','timer'];
+const ICONS = {
+  today:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>',
+  schedule:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  habits:'<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>',
+  clients:'<svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M3 13h18"/></svg>',
+  timer:'<svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4M9 2h6"/></svg>',
+  more:'<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>'
+};
+
+/* =====================================================================
+   2. UTILITIES
+   ===================================================================== */
+const $  = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
+const pad = n=>String(n).padStart(2,'0');
+const clamp = (v,a,b)=>Math.min(b,Math.max(a,v));
+const ratio = (v,t)=>t>0?clamp((Number(v)||0)/t,0,1):0;
+const txt = s=>String(s==null?'':s).trim();
+const uid = ()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+/* DATES — keys are LOCAL "YYYY-MM-DD". Never use toISOString() for a key:
+   it converts to UTC, and in Lagos (UTC+1) that puts 00:00–00:59 on the
+   previous day. dayIndex() uses Date.UTC so day maths ignores DST/timezones. */
+function dateKey(d=new Date()){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;}
+const todayKey = ()=>dateKey();
+function parseKey(k){const [y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d);}
+function dayIndex(k){const [y,m,d]=k.split('-').map(Number);return Math.round(Date.UTC(y,m-1,d)/86400000);}
+function daysBetween(a,b){return dayIndex(b)-dayIndex(a);}
+function addDays(k,n){const d=parseKey(k);d.setDate(d.getDate()+n);return dateKey(d);}
+function fmtDate(k,o={weekday:'short',month:'short',day:'numeric'}){return parseKey(k).toLocaleDateString('en-US',o);}
+const LONG = {weekday:'long',month:'long',day:'numeric'};
+function toMin(t){const [h,m]=String(t).split(':').map(Number);return (h||0)*60+(m||0);}
+function fmt12(t){const v=toMin(t);let h=Math.floor(v/60)%24;const ap=h>=12?'PM':'AM';h=h%12||12;return `${h}:${pad(v%60)} ${ap}`;}
+function fmtTime(iso){const d=new Date(iso);return fmt12(`${d.getHours()}:${d.getMinutes()}`);}
+function hhmm(iso){if(!iso)return '';const d=new Date(iso);return `${pad(d.getHours())}:${pad(d.getMinutes())}`;}
+function fmtDur(min){if(min==null||isNaN(min))return '—';min=Math.round(min);const a=Math.abs(min),h=Math.floor(a/60),m=a%60;return (min<0?'-':'')+(h?`${h}h ${pad(m)}m`:`${m}m`);}
+function fmtHMS(ms){const s=Math.max(0,Math.floor(ms/1000));return `${Math.floor(s/3600)}:${pad(Math.floor(s%3600/60))}:${pad(s%60)}`;}
+function money(n){n=Number(n)||0;return (n<0?'-':'')+state.settings.currency+Math.abs(n).toLocaleString('en-US',{maximumFractionDigits:2});}
+function firstSentence(s){const f=String(s||'').split(/[\n.!?]+/).map(x=>x.trim()).find(Boolean)||'';return f.length>160?f.slice(0,157)+'…':f;}
+function mondayOf(k){const d=parseKey(k);d.setDate(d.getDate()-((d.getDay()+6)%7));return dateKey(d);}
+const TOTAL_DAYS = daysBetween(MISSION_START,MISSION_END)+1; // 86
+function daysElapsed(){return clamp(daysBetween(MISSION_START,todayKey())+1,0,TOTAL_DAYS);}
+function daysLeft(){return clamp(daysBetween(todayKey(),MISSION_END),0,TOTAL_DAYS);}
+
+/* =====================================================================
+   3. STATE + PERSISTENCE
+   One object holds everything. It is saved to localStorage as JSON.
+   ===================================================================== */
+let storageOK = true;
+let corruptRecovered = false;
+
+function templateFromDefaults(){
+  return DEFAULT_SCHEDULE.map(([start,end,name,remind])=>({id:uid(),start,end,name,remind}));
+}
+function defaultState(){
+  return {
+    version:1,
+    settings:{theme:'dark',currency:'₦',reminders:true,notify:false,lastBackup:null},
+    template:templateFromDefaults(),
+    days:{},
+    mission:MISSION_AREAS.map(([key,name,target])=>({key,name,current:'',target,progress:0,notes:'',updated:null})),
+    finance:{baseline:0,target:0,targetAuto:true,entries:[]},
+    books:[],
+    journal:[],
+    timer:{status:'idle',category:'business',startedAt:null,accumulated:0,sessionStart:null},
+    crm:defaultCrm()
+  };
+}
+function emptyReview(){const r={focus:null};REVIEW_QS.forEach(([q])=>r[q]='');return r;}
+
+/* Fill in any missing fields so old or imported records never crash the UI. */
+function normalizeDay(d,k){
+  if(k) d.date=k; // each day knows its own date (used by client-acquisition scoring)
+  if(!Array.isArray(d.schedule)) d.schedule=[];
+  if(!d.habits||typeof d.habits!=='object') d.habits={};
+  HABITS.forEach(h=>{d.habits[h.key]=Object.assign({done:false,minutes:0,notes:''},d.habits[h.key]||{});});
+  if(!Array.isArray(d.sessions)) d.sessions=[];
+  d.counters=Object.assign({content:0,outreach:0},d.counters||{});
+  d.review=Object.assign(emptyReview(),d.review||{});
+  return d;
+}
+
+/* Merge saved data over defaults. New features added later get defaults. */
+function hydrate(p){
+  const def=defaultState();
+  if(!p||typeof p!=='object') return def;
+  const s=Object.assign({},def,p);
+  s.settings=Object.assign({},def.settings,p.settings||{});
+  s.finance=Object.assign({},def.finance,p.finance||{});
+  if(!Array.isArray(s.finance.entries)) s.finance.entries=[];
+  s.timer=Object.assign({},def.timer,p.timer||{});
+  s.template=Array.isArray(p.template)?p.template:def.template;
+  s.days=(p.days&&typeof p.days==='object')?p.days:{};
+  Object.keys(s.days).forEach(k=>normalizeDay(s.days[k],k));
+  const saved=Array.isArray(p.mission)?p.mission:[];
+  s.mission=def.mission.map(a=>Object.assign(a,saved.find(x=>x&&x.key===a.key)||{}));
+  s.books=Array.isArray(p.books)?p.books:[];
+  s.journal=Array.isArray(p.journal)?p.journal:[];
+  const dc=defaultCrm(),pc=(p.crm&&typeof p.crm==='object')?p.crm:{};
+  s.crm={targets:Object.assign(dc.targets,pc.targets||{}),
+    prospects:Array.isArray(pc.prospects)?pc.prospects.map(normalizeProspect):[],
+    events:Array.isArray(pc.events)?pc.events:[],
+    manual:(pc.manual&&typeof pc.manual==='object')?pc.manual:{}};
+  return s;
+}
+
+function loadState(){
+  let raw=null;
+  try{
+    const probe='__lifeos_probe__';
+    localStorage.setItem(probe,'1');localStorage.removeItem(probe);
+    raw=localStorage.getItem(STORAGE_KEY);
+  }catch(e){storageOK=false;return defaultState();}
+  if(!raw) return defaultState();
+  try{return hydrate(JSON.parse(raw));}
+  catch(e){
+    // Corrupt JSON: keep a copy instead of silently destroying it.
+    try{localStorage.setItem(STORAGE_KEY+'.corrupt.'+Date.now(),raw);}catch(_){}
+    corruptRecovered=true;
+    return defaultState();
+  }
+}
+
+let state = loadState();
+let activeDate = todayKey();   // the day being viewed/edited (History can switch it)
+let currentView = 'today';
+let weekSel = null;
+let lastTickKey = todayKey();
+let lastMinute = -1;
+
+/* Saving: text fields save after a short pause (debounce) so typing
+   doesn't hammer storage. pagehide/visibilitychange flush immediately,
+   so closing the tab mid-sentence still saves. */
+let saveTimer=null;
+function save(){
+  clearTimeout(saveTimer);saveTimer=null;
+  if(!storageOK) return;
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}
+  catch(e){toast('Save failed: browser storage is full or blocked. Export a backup now.','error');}
+}
+function saveSoon(){clearTimeout(saveTimer);saveTimer=setTimeout(save,400);}
+window.addEventListener('pagehide',save);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)save();});
+// If the dashboard is open in two tabs, keep them in sync instead of overwriting each other.
+window.addEventListener('storage',e=>{
+  if(e.key===STORAGE_KEY&&e.newValue){try{state=hydrate(JSON.parse(e.newValue));render();}catch(_){}}
+});
+
+/* Day records. getDay creates one (copying the default schedule) the first
+   time a date is opened. Existing days are never rebuilt from the template. */
+function newDay(){
+  return normalizeDay({
+    created:new Date().toISOString(),
+    schedule:state.template.map(t=>({id:uid(),tid:t.id,start:t.start,end:t.end,name:t.name,remind:!!t.remind,status:'pending',actualStart:null,actualEnd:null,notes:''}))
+  });
+}
+function getDay(k){if(!state.days[k]){state.days[k]=newDay();state.days[k].date=k;}return state.days[k];}
+const byStart=(a,b)=>toMin(a.start)-toMin(b.start);
+
+/* =====================================================================
+   4. CALCULATIONS
+   ===================================================================== */
+function hm(d,k){return d?Number(d.habits[k]&&d.habits[k].minutes)||0:0;}
+function hd(d,k){return !!(d&&d.habits[k]&&d.habits[k].done);}
+
+function scoreDay(d){
+  if(!d) return {total:0,parts:SCORING.map(c=>({key:c.key,label:c.label,max:c.max,pts:0}))};
+  const parts=SCORING.map(c=>({key:c.key,label:c.label,max:c.max,pts:Math.round(clamp(c.calc(d),0,c.max))}));
+  return {total:parts.reduce((s,p)=>s+p.pts,0),parts};
+}
+function classify(s){
+  if(s>=90) return {label:'Excellent',cls:'ex'};
+  if(s>=80) return {label:'Strong',cls:'st'};
+  if(s>=70) return {label:'Decent',cls:'de'};
+  if(s>=60) return {label:'Weak',cls:'we'};
+  return {label:'Poor',cls:'po'};
+}
+function hasData(d){
+  if(!d) return false;
+  return d.schedule.some(b=>b.status!=='pending')||
+    HABITS.some(h=>d.habits[h.key].done||Number(d.habits[h.key].minutes)>0)||
+    d.sessions.length>0||d.counters.content>0||d.counters.outreach>0||
+    REVIEW_QS.some(([q])=>txt(d.review[q]))||
+    (!!d.date&&state.crm.events.some(e=>e.date===d.date));
+}
+function completion(d){if(!d||!d.schedule.length)return 0;return Math.round(d.schedule.filter(b=>b.status==='done').length/d.schedule.length*100);}
+function breakdown(d){
+  return BREAKDOWN.map(g=>({label:g.label,min:g.habits.reduce((s,h)=>s+hm(d,h),0)+
+    (g.other&&d?d.sessions.filter(x=>x.category==='other').reduce((a,x)=>a+x.minutes,0):0)}));
+}
+function focusedMinutes(d){return breakdown(d).reduce((s,x)=>s+x.min,0);}
+
+/* Streak = consecutive days scoring 60+. Today only counts once it reaches 60,
+   so an unfinished morning doesn't break yesterday's streak. */
+function streak(){
+  const ok=k=>scoreDay(state.days[k]).total>=60;
+  let k=todayKey(),n=0;
+  if(!ok(k)) k=addDays(k,-1);
+  while(k>=MISSION_START&&ok(k)){n++;k=addDays(k,-1);}
+  return n;
+}
+
+/* Schedule block timing. Blocks whose end is before their start (Sleep)
+   end on the following day. */
+function blockStartDate(k,b){const d=parseKey(k);d.setMinutes(toMin(b.start));return d;}
+function blockEndDate(k,b){const d=parseKey(k);let e=toMin(b.end);if(e<=toMin(b.start))e+=1440;d.setMinutes(e);return d;}
+function plannedMins(b){let x=toMin(b.end)-toMin(b.start);if(x<=0)x+=1440;return x;}
+function actualMins(b){return(b.actualStart&&b.actualEnd)?(new Date(b.actualEnd)-new Date(b.actualStart))/60000:null;}
+/* Overdue is DISPLAY-ONLY. The stored status stays as you set it. */
+function displayStatus(k,b,now=new Date()){
+  if((b.status==='pending'||b.status==='active')&&now>blockEndDate(k,b)) return 'overdue';
+  return b.status;
+}
+/* Finished early/on time/late vs planned end, with a 5-minute tolerance. */
+function timingVerdict(k,b){
+  if(!b.actualEnd) return null;
+  const diff=(new Date(b.actualEnd)-blockEndDate(k,b))/60000;
+  if(diff<-5) return {t:'early',m:-diff};
+  if(diff>5) return {t:'late',m:diff};
+  return {t:'on time',m:0};
+}
+function timeToISO(k,t,afterISO){
+  const d=parseKey(k);d.setMinutes(toMin(t));
+  if(afterISO&&d<new Date(afterISO)) d.setDate(d.getDate()+1);
+  return d.toISOString();
+}
+
+/* Weeks run Monday–Sunday, clipped to Oct 7 – Dec 31. */
+function missionWeeks(){
+  const weeks=[];let m=mondayOf(MISSION_START),n=1;
+  while(m<=MISSION_END){
+    const days=[];for(let j=0;j<7;j++)days.push(addDays(m,j));
+    weeks.push({n:n++,monday:m,days,inRange:days.filter(x=>x>=MISSION_START&&x<=MISSION_END)});
+    m=addDays(m,7);
+  }
+  return weeks;
+}
+/* Unlogged past days count as 0 in the average. That is deliberate:
+   skipping the dashboard should not make the numbers look better. */
+function weekStats(w){
+  const t=todayKey();
+  const elapsed=w.inRange.filter(k=>k<t||(k===t&&hasData(state.days[k])));
+  const r={elapsed:elapsed.length,logged:0,scoreSum:0,focus:0,prayerDays:0,exDays:0,readMin:0,py:0,cy:0,wd:0,work:0,content:0,outreach:0,money:0};
+  elapsed.forEach(k=>{
+    const d=state.days[k];if(!hasData(d))return;
+    r.logged++;r.scoreSum+=scoreDay(d).total;r.focus+=focusedMinutes(d);
+    if(hm(d,'prayer')+hm(d,'bible')>0||hd(d,'prayer')||hd(d,'bible'))r.prayerDays++;
+    if(hm(d,'exercise')>0||hd(d,'exercise'))r.exDays++;
+    r.readMin+=hm(d,'reading');r.py+=hm(d,'python');r.cy+=hm(d,'cyber');r.wd+=hm(d,'webdev');
+    r.work+=hm(d,'clientwork')+hm(d,'deepwork');r.content+=d.counters.content;r.outreach+=d.counters.outreach;
+  });
+  const first=w.inRange[0],last=w.inRange[w.inRange.length-1];
+  r.money=state.finance.entries.filter(e=>e.type==='income'&&e.date>=first&&e.date<=last).reduce((s,e)=>s+Number(e.amount||0),0);
+  ['researched','outreach','followup','call','proposal','won'].forEach(t=>{r['c_'+t]=crmCount(t,first,last);});
+  r.outreach+=r.c_outreach+r.c_followup;
+  r.missed=r.elapsed-r.logged;
+  r.avg=r.elapsed?Math.round(r.scoreSum/r.elapsed):0;
+  return r;
+}
+
+/* Tomorrow's focus — plain rules over your own answers. No AI involved. */
+function generateFocus(d){
+  const r=d.review,f=firstSentence;
+  const weakest=scoreDay(d).parts.slice().sort((a,b)=>a.pts/a.max-b.pts/b.max)[0];
+  const priority=f(r.priority)||f(r.improve)||f(r.crmImprove)||`Raise ${weakest.label} (${weakest.pts}/${weakest.max} today)`;
+  let risk;
+  if(f(r.distractions)) risk=f(r.distractions);
+  else if(f(r.wasted)) risk=f(r.wasted);
+  else if(f(r.why)) risk=`Repeating today’s failure: ${f(r.why)}`;
+  else risk=`Neglecting ${weakest.label} again. It scored ${weakest.pts}/${weakest.max} today.`;
+  const tpl=state.template.slice().sort(byStart);
+  const dw=tpl.find(b=>/deep work/i.test(b.name))||tpl.find(b=>!/wake|sleep/i.test(b.name))||tpl[0];
+  const firstTask=dw?`${fmt12(dw.start)} · ${dw.name}: start on “${priority}” before anything else.`:`Start on “${priority}” before anything else.`;
+  let avoid=f(r.wasted)||f(r.distractions);
+  if(!avoid||avoid===risk) avoid='Opening social media before the first deep work block has started.';
+  return {priority,risk,firstTask,avoid,generatedAt:new Date().toISOString()};
+}
+
+/* =====================================================================
+   5. TIMER
+   Stores timestamps, not a tick counter. Elapsed = accumulated + (now − startedAt).
+   That survives refreshes, closed tabs, phone sleep and background throttling.
+   ===================================================================== */
+function timerElapsed(){const t=state.timer;return (Number(t.accumulated)||0)+(t.status==='running'&&t.startedAt?Date.now()-t.startedAt:0);}
+function timerStart(){
+  const t=state.timer,sel=$('#timerCat');
+  Object.assign(t,{status:'running',category:sel?sel.value:t.category,startedAt:Date.now(),accumulated:0,sessionStart:Date.now()});
+  save();render();
+}
+function timerPause(){const t=state.timer;if(t.status!=='running')return;t.accumulated=timerElapsed();t.startedAt=null;t.status='paused';save();render();}
+function timerResume(){const t=state.timer;if(t.status!=='paused')return;t.startedAt=Date.now();t.status='running';save();render();}
+function timerClear(){Object.assign(state.timer,{status:'idle',startedAt:null,accumulated:0,sessionStart:null});save();render();}
+function timerStop(){
+  const t=state.timer;if(t.status==='idle')return;
+  let min=Math.round(timerElapsed()/60000);
+  if(min<1){toast('Under 1 minute. Nothing logged.');timerClear();return;}
+  if(min>240){ // guard against a timer left running overnight
+    const v=prompt(`This timer ran for ${fmtDur(min)}. If you forgot to stop it, enter the real minutes to log:`,String(min));
+    if(v===null)return;
+    const n=parseInt(v,10);if(!(n>0)){toast('Invalid number. Nothing logged.','error');return;}
+    min=n;
+  }
+  const cat=TIMER_CATEGORIES.find(c=>c.key===t.category)||TIMER_CATEGORIES[TIMER_CATEGORIES.length-1];
+  const d=getDay(dateKey(new Date(t.sessionStart||Date.now()))); // logs to the day the session STARTED
+  d.sessions.push({id:uid(),category:cat.key,start:new Date(t.sessionStart||Date.now()).toISOString(),end:new Date().toISOString(),minutes:min});
+  if(cat.habit){const h=d.habits[cat.habit];h.minutes=(Number(h.minutes)||0)+min;h.done=true;}
+  timerClear();
+  toast(`Logged ${min} min to ${cat.label}.`);
+}
+function timerReset(){if(state.timer.status==='idle')return;if(confirm('Discard this session without logging it?'))timerClear();}
+
+/* =====================================================================
+   6. REMINDERS / NOTIFICATIONS
+   Checked once per minute while the page is open. A 3-minute window means
+   reminders still fire when a background tab is throttled to once a minute.
+   ===================================================================== */
+let audioCtx=null;
+document.addEventListener('pointerdown',()=>{if(!audioCtx){try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(_){}}},{once:true});
+function beep(){
+  if(!audioCtx)return;
+  try{const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.frequency.value=880;g.gain.value=.08;o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+.18);}catch(_){}
+}
+function notify(title,body){
+  toast(`<strong>${esc(title)}</strong><br>${esc(body)}`,'info',9000,true);
+  beep();
+  if(navigator.vibrate){try{navigator.vibrate([180,90,180]);}catch(_){}}
+  if(state.settings.notify&&'Notification' in window&&Notification.permission==='granted'){
+    // Android Chrome refuses `new Notification()` without a service worker; the in-page alert above still shows.
+    try{new Notification(title,{body,tag:title});}catch(_){}
+  }
+}
+function getFired(k){try{const f=JSON.parse(localStorage.getItem(FIRED_KEY)||'{}');return f.date===k?f.ids||{}:{};}catch(_){return {};}}
+function setFired(k,ids){try{localStorage.setItem(FIRED_KEY,JSON.stringify({date:k,ids}));}catch(_){}}
+function checkReminders(now){
+  if(!state.settings.reminders)return;
+  const k=dateKey(now),d=state.days[k];if(!d)return;
+  const fired=getFired(k),nowMin=now.getHours()*60+now.getMinutes();let changed=false;
+  d.schedule.forEach(b=>{
+    const s=toMin(b.start);
+    if(b.remind&&b.status==='pending'&&nowMin>=s&&nowMin<s+3&&!fired['s'+b.id]){
+      fired['s'+b.id]=1;changed=true;notify(`${fmt12(b.start)} · ${b.name}`,`Planned until ${fmt12(b.end)}. Start the block.`);
+    }
+    if(b.status==='active'&&!fired['e'+b.id]&&now>=blockEndDate(k,b)){
+      fired['e'+b.id]=1;changed=true;notify(`Time’s up: ${b.name}`,'Planned end reached. Mark it complete, or keep going on purpose.');
+    }
+  });
+  if(changed)setFired(k,fired);
+}
+async function enableNotifications(){
+  if(!('Notification' in window)){toast('This browser has no notification support. In-page alerts will still work while the page is open.','error');return;}
+  const p=await Notification.requestPermission();
+  state.settings.notify=p==='granted';save();render();
+  toast(p==='granted'?'Notifications allowed.':'Notifications not allowed. In-page alerts still work while the page is open.',p==='granted'?'info':'error');
+}
+
+/* =====================================================================
+   7. UI HELPERS
+   ===================================================================== */
+function toast(msg,type='info',ms=3500,html=false){
+  const el=document.createElement('div');el.className='toast'+(type==='error'?' error':'');
+  if(html)el.innerHTML=msg;else el.textContent=msg;
+  $('#toasts').appendChild(el);setTimeout(()=>el.remove(),ms);
+}
+const modal=$('#modal');
+function openModal(html){
+  $('#modalBody').innerHTML=html;
+  if(typeof modal.showModal==='function'){if(!modal.open)modal.showModal();}else modal.setAttribute('open','');
+  const f=$('#modalBody input,#modalBody textarea');if(f&&window.innerWidth>=960)f.focus();
+}
+function closeModal(){if(typeof modal.close==='function'&&modal.open)modal.close();else modal.removeAttribute('open');}
+modal.addEventListener('click',e=>{if(e.target===modal)closeModal();});
+
+function barChart(items){
+  const m=Math.max(1,...items.map(i=>i.v));
+  return `<div class="chart">${items.map(i=>`<div class="cb${i.muted?' muted':''}"><span class="cb-v mono">${i.muted||!i.v?'':esc(i.fmt||i.v)}</span><div class="cb-track"><i style="height:${Math.round(ratio(i.v,m)*100)}%;${i.color?`background:${i.color}`:''}"></i></div><span class="cb-l">${esc(i.l)}</span></div>`).join('')}</div>`;
+}
+function scoreColor(s){return s>=80?'var(--green)':s>=60?'var(--yellow)':'var(--red)';}
+function stat(k,v,s=''){return `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div>${s?`<div class="s">${s}</div>`:''}</div>`;}
+function isEditing(){const a=document.activeElement;return a&&$('#view').contains(a)&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName);}
+
+/* =====================================================================
+   8. VIEWS — each returns an HTML string for #view
+   ===================================================================== */
+function missionHTML(){
+  return `<div class="mission-text"><p>${esc(MISSION.intro)}</p><p>${esc(MISSION.evidence)}</p><p>${esc(MISSION.lead)}</p>
+  <ol>${MISSION.list.map(x=>`<li>${esc(x)}</li>`).join('')}</ol><p>${esc(MISSION.close1)}</p><p class="close">${esc(MISSION.close2)}</p></div>`;
+}
+function focusListHTML(f){
+  return `<dl class="focus-list"><div><dt>#1 priority</dt><dd>${esc(f.priority)}</dd></div><div><dt>Biggest risk</dt><dd>${esc(f.risk)}</dd></div><div><dt>First task</dt><dd>${esc(f.firstTask)}</dd></div><div><dt>One thing to avoid</dt><dd>${esc(f.avoid)}</dd></div></dl>`;
+}
+function scoreCardHTML(d){
+  const s=scoreDay(d),c=classify(s.total);
+  return `<section class="card"><div class="card-h"><h2>Daily score</h2><span class="badge cls-${c.cls}">${c.label}</span></div>
+  <div class="score-top"><span class="score-big mono">${s.total}</span><span>/100</span></div>
+  <div class="score-rows">${s.parts.map(p=>`<div class="srow"><span>${p.label}</span><div class="bar"><i style="width:${p.pts/p.max*100}%"></i></div><span class="mono">${p.pts}/${p.max}</span></div>`).join('')}</div>
+  <p class="note">A low score is information, not a verdict. Read it, adjust tomorrow, keep going.</p>
+  <details class="explain"><summary>How the score is calculated</summary><ul>${SCORING.map(x=>`<li><b>${x.label} (${x.max})</b>: ${x.rule}</li>`).join('')}<li>90+ Excellent · 80–89 Strong · 70–79 Decent · 60–69 Weak · below 60 Poor.</li></ul></details></section>`;
+}
+function blockActions(b,primaryStart=true){
+  return `<button class="btn btn-sm${b.status==='pending'&&primaryStart?' btn-primary':''}" data-action="blockStart" data-id="${b.id}" ${b.status==='done'||b.status==='active'?'disabled':''}>Start</button>
+  <button class="btn btn-sm${b.status==='active'?' btn-primary':''}" data-action="blockComplete" data-id="${b.id}" ${b.status==='done'?'disabled':''}>Complete</button>`;
+}
+function nowCardHTML(k,d){
+  const now=new Date();
+  const cur=d.schedule.find(b=>now>=blockStartDate(k,b)&&now<blockEndDate(k,b));
+  const others=d.schedule.filter(b=>b.status==='active'&&b!==cur);
+  const next=d.schedule.filter(b=>blockStartDate(k,b)>now).sort(byStart)[0];
+  let body='';
+  if(cur){
+    const st=displayStatus(k,cur,now);
+    body=`<div class="card-h" style="margin:0"><span class="mono muted small">${fmt12(cur.start)} – ${fmt12(cur.end)}</span><span class="badge b-${st}">${STATUS_LABEL[st]}</span></div>
+    <div class="now-name">${esc(cur.name)}</div>
+    ${cur.status==='done'?'<p class="muted small" style="margin:8px 0 12px">Completed. Move to the next block.</p>':`<div class="countdown mono" data-countdown="${cur.id}" data-k="${k}"></div>`}
+    <div class="btn-row">${blockActions(cur)}</div>`;
+  }else body='<p class="muted">No block scheduled right now.</p>';
+  const extra=others.map(b=>`<div class="next">Still in progress: <strong>${esc(b.name)}</strong> <button class="btn btn-sm" data-action="blockComplete" data-id="${b.id}">Complete</button></div>`).join('');
+  return `<section class="card"><div class="card-h"><h2>Right now</h2><button class="link" data-action="nav" data-view="schedule">Full schedule →</button></div>${body}${extra}
+  ${next?`<div class="next">Next · <span class="mono">${fmt12(next.start)}</span> ${esc(next.name)}</div>`:''}</section>`;
+}
+
+function viewToday(){
+  const k=activeDate,isToday=k===todayKey(),d=getDay(k);
+  const yk=addDays(k,-1),prev=state.days[yk];
+  const hr=new Date().getHours(),greet=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening',dn=daysBetween(MISSION_START,k)+1;
+  let html=`<div class="greet"><h1>${isToday?`${greet}, ${OWNER_NAME}.`:esc(fmtDate(k,LONG))}</h1><p class="muted">${isToday?fmtDate(k,LONG):'Past day'}${dn>=1&&dn<=TOTAL_DAYS?` · Day ${dn} of ${TOTAL_DAYS}`:''}</p></div>`;
+  if(yk>=MISSION_START&&(!hasData(prev)||scoreDay(prev).total<60)){
+    html+=`<div class="notice"><strong>${ANTI_RESET}</strong><span>Yesterday: ${hasData(prev)?`${scoreDay(prev).total}/100`:'nothing recorded'}. It stays in your history. Today is simply the next entry.</span></div>`;
+  }
+  if(prev&&prev.review.focus) html+=`<section class="card"><div class="card-h"><h2>Focus for ${isToday?'today':'this day'} · set the night before</h2></div>${focusListHTML(prev.review.focus)}</section>`;
+  const done=HABITS.filter(h=>d.habits[h.key].done).length;
+  const dayNo=daysBetween(MISSION_START,k)+1;
+  html+=`<div class="stats">${stat('Focused',fmtDur(focusedMinutes(d)),'logged minutes')}${stat('Habits',`${done}/${HABITS.length}`,'checked')}${stat('Schedule',`${completion(d)}%`,'blocks completed')}${stat('Mission day',dayNo>=1&&dayNo<=TOTAL_DAYS?`${dayNo}/${TOTAL_DAYS}`:'—',`${daysLeft()} days left`)}</div>`;
+  html+=`<div class="grid g2">${isToday?nowCardHTML(k,d):''}${scoreCardHTML(d)}</div>`;
+  const logged=Object.values(state.days).filter(hasData).length;
+  const lb=state.settings.lastBackup;
+  if(logged>=3&&(!lb||daysBetween(dateKey(new Date(lb)),todayKey())>=7)){
+    html+=`<div class="notice"><strong>Back up your data.</strong><span>Last backup: ${lb?fmtDate(dateKey(new Date(lb))):'never'}. Browser storage can be wiped by clearing site data. <button class="link" data-action="exportData">Download backup now</button></span></div>`;
+  }
+  // Mission: the core sentence is always visible; the full list expands.
+  if(isToday) html+=crmTodayCard();
+  html+=`<section class="card"><div class="card-h"><h2>Mission · December 31, 2026</h2><button class="link" data-action="nav" data-view="mission">Progress →</button></div>
+  <p class="mission-lead">${esc(MISSION.intro)}</p><p class="mission-close">${esc(MISSION.close2)}</p>
+  <details style="margin-top:8px"><summary>Full mission</summary><div style="margin-top:10px">${missionHTML()}</div></details></section>`;
+  return html;
+}
+
+function viewSchedule(){
+  const k=activeDate,d=getDay(k),isToday=k===todayKey(),now=new Date();
+  const done=d.schedule.filter(b=>b.status==='done').length;
+  const over=d.schedule.filter(b=>displayStatus(k,b,now)==='overdue').length;
+  d.schedule.sort(byStart);
+  return `<div class="section-head"><div><h1>Schedule</h1><p class="muted small">${fmtDate(k,LONG)} · ${done}/${d.schedule.length} completed · ${over} overdue</p></div><button class="btn btn-sm" data-action="blockAdd">+ Add block</button></div>
+  <div class="blk-list">${d.schedule.map(b=>blockHTML(k,b,isToday,now)).join('')||'<p class="empty">No blocks. Add one.</p>'}</div>
+  <p class="faint small">Overdue means the planned time passed without completion. It is not marked as a failure; you decide the status. Edits saved to your default schedule apply to future days only. Past days keep their own copy.</p>`;
+}
+function blockHTML(k,b,isToday,now){
+  const st=displayStatus(k,b,now);
+  const isNow=isToday&&now>=blockStartDate(k,b)&&now<blockEndDate(k,b);
+  const act=actualMins(b),v=timingVerdict(k,b);
+  const meta=[`Planned ${fmtDur(plannedMins(b))}`,`Actual ${fmtDur(act)}`];
+  if(b.actualStart)meta.push(`Started ${fmtTime(b.actualStart)}`);
+  if(b.actualEnd)meta.push(`Done ${fmtTime(b.actualEnd)}`);
+  const verdict=v?` · <span class="verdict v-${v.t.replace(' ','')}">${v.t==='on time'?'On time':`${fmtDur(v.m)} ${v.t}`}</span>`:'';
+  const showCount=isToday&&(b.status==='active'||(isNow&&b.status==='pending'));
+  return `<article class="blk st-${st}${isNow?' is-now':''}">
+    <div class="blk-time mono">${fmt12(b.start)}<span>${fmt12(b.end)}</span></div>
+    <div class="blk-body">
+      <div class="blk-top"><h3>${isNow?'<span class="now-tag">NOW</span>':''}${esc(b.name)}</h3><span class="badge b-${st}">${STATUS_LABEL[st]}</span></div>
+      <div class="blk-meta">${meta.join(' · ')}${verdict}</div>
+      ${showCount?`<div class="countdown mono" data-countdown="${b.id}" data-k="${k}"></div>`:''}
+      <div class="blk-actions">${isToday?blockActions(b,isNow):''}
+        <select class="input input-sm" data-change="blockStatus" data-id="${b.id}" aria-label="Status of ${esc(b.name)}">${STATUS_OPTS.map(([val,l])=>`<option value="${val}"${b.status===val?' selected':''}>${l}</option>`).join('')}</select>
+        <button class="btn btn-sm btn-ghost" data-action="blockEdit" data-id="${b.id}">Edit</button>
+      </div>
+      <input class="input input-sm" data-bind="blockNote" data-id="${b.id}" value="${esc(b.notes)}" placeholder="Notes" aria-label="Notes for ${esc(b.name)}">
+    </div></article>`;
+}
+
+function viewHabits(){
+  const k=activeDate,d=getDay(k);
+  const total=HABITS.reduce((s,h)=>s+hm(d,h.key),0),done=HABITS.filter(h=>d.habits[h.key].done).length;
+  const counter=(key,label)=>`<div class="counter"><span>${label}</span><div class="stepper"><button class="btn" data-action="counter" data-k="${key}" data-d="-1" aria-label="Decrease">−</button><span class="cv mono" id="cnt-${key}">${d.counters[key]}</span><button class="btn" data-action="counter" data-k="${key}" data-d="1" aria-label="Increase">+</button></div></div>`;
+  return `<div class="section-head"><div><h1>Habits & activities</h1><p class="muted small">${fmtDate(k,LONG)} · <span id="habDone">${done}</span>/${HABITS.length} done · <span id="habMin">${total}</span> min logged</p></div></div>
+  <section class="card"><div class="card-h"><h2>Output today</h2></div><div class="counters">${counter('content','Content pieces published')}<div class="counter"><span>Outreach + follow-ups<small class="muted">Logged in Client Acquisition</small></span><div class="stepper"><span class="cv">${outreachTotal(k,d)}</span><button class="btn btn-sm" data-action="logOutreach">+ Log</button></div></div></div></section>
+  <section class="card habits">${HABITS.map(h=>{const x=d.habits[h.key];return `<div class="habit${x.done?' done':''}" id="hab-${h.key}">
+    <label class="hcheck"><input type="checkbox" data-change="habitDone" data-k="${h.key}"${x.done?' checked':''}><span>${h.label}</span></label>
+    <label class="hmin"><input type="number" class="input mono" min="0" step="5" inputmode="numeric" data-bind="habitMin" data-k="${h.key}" value="${x.minutes||''}" placeholder="0" aria-label="${h.label} minutes"><span>min</span></label>
+    <input class="input hnote" data-bind="habitNote" data-k="${h.key}" value="${esc(x.notes)}" placeholder="Notes" aria-label="${h.label} notes"></div>`;}).join('')}</section>
+  <p class="faint small">Minutes drive the score. A tick with 0 minutes earns nothing, except Sleep on time and Journaling. Typing minutes ticks the box for you. Timer sessions are added here automatically.</p>`;
+}
+
+function viewTimer(){
+  const t=state.timer,d=getDay(todayKey());
+  const br=breakdown(d),tot=br.reduce((s,x)=>s+x.min,0),max=Math.max(1,...br.map(x=>x.min));
+  const cat=TIMER_CATEGORIES.find(c=>c.key===t.category)||TIMER_CATEGORIES[0];
+  const btns=t.status==='idle'?`<button class="btn btn-primary" data-action="timerStart">Start</button>`
+    :t.status==='running'?`<button class="btn" data-action="timerPause">Pause</button><button class="btn btn-primary" data-action="timerStop">Stop & log</button><button class="btn btn-danger" data-action="timerReset">Reset</button>`
+    :`<button class="btn btn-primary" data-action="timerResume">Resume</button><button class="btn" data-action="timerStop">Stop & log</button><button class="btn btn-danger" data-action="timerReset">Reset</button>`;
+  const sess=d.sessions.slice().reverse();
+  return `<div class="section-head"><div><h1>Time tracking</h1><p class="muted small">Today, ${fmtDate(todayKey(),LONG)}. Sessions log to the date they started.</p></div></div>
+  <div class="grid g2">
+  <section class="card"><label class="lbl">Category<select id="timerCat" class="input" data-change="timerCat"${t.status!=='idle'?' disabled':''}>${TIMER_CATEGORIES.map(c=>`<option value="${c.key}"${c.key===t.category?' selected':''}>${c.label}</option>`).join('')}</select></label>
+    <div class="timer-display mono" id="timerDisplay">${fmtHMS(timerElapsed())}</div>
+    <div class="timer-state">${t.status==='idle'?'Ready':`${t.status==='running'?'Running':'Paused'} · ${cat.label}`}</div>
+    <div class="timer-btns">${btns}</div>
+    <p class="faint small" style="margin-top:12px">Stop & log adds the minutes to ${cat.habit?`the <b>${HABITS.find(h=>h.key===cat.habit).label}</b> habit`:'Other'} and to your score. Reset throws the session away.</p></section>
+  <section class="card"><div class="card-h"><h2>Today by category</h2><span class="mono">${fmtDur(tot)} focused</span></div>
+    <div class="hbars">${br.map(x=>`<div class="hb"><span>${x.label}</span><div class="bar"><i style="width:${x.min/max*100}%"></i></div><span class="mono">${x.min} min</span></div>`).join('')}</div>
+    <p class="faint small" style="margin-top:12px">Includes timer sessions and minutes typed into Habits.</p></section>
+  </div>
+  <section class="card"><div class="card-h"><h2>Timer sessions today</h2></div><div class="list">${sess.map(s=>`<div class="li"><div class="li-main"><strong>${esc((TIMER_CATEGORIES.find(c=>c.key===s.category)||{label:s.category}).label)} · ${s.minutes} min</strong><span>${fmtTime(s.start)} – ${fmtTime(s.end)}</span></div><button class="btn btn-sm btn-ghost btn-danger" data-action="sessionDelete" data-id="${s.id}">Delete</button></div>`).join('')||'<p class="empty">No timer sessions yet today.</p>'}</div></section>`;
+}
+
+function viewReview(){
+  const k=activeDate,d=getDay(k),f=d.review.focus;
+  return `<div class="section-head"><div><h1>End-of-day review</h1><p class="muted small">${fmtDate(k,LONG)} · Score ${scoreDay(d).total}/100</p></div></div>
+  <section class="card form">${REVIEW_QS.map(([q,l])=>`<label class="lbl">${l}<textarea class="input" rows="2" data-bind="review" data-q="${q}">${esc(d.review[q])}</textarea></label>`).join('')}</section>
+  ${crmReviewHTML(k)}
+  <section class="card"><div class="card-h"><h2>Tomorrow’s focus</h2><button class="btn btn-primary btn-sm" data-action="genFocus">${f?'Regenerate':'Generate tomorrow’s focus'}</button></div>
+  ${f?focusListHTML(f):'<p class="muted">Answer the questions, then generate. The result appears on tomorrow’s Today screen.</p>'}</section>`;
+}
+
+function viewWeek(){
+  const weeks=missionWeeks(),t=todayKey();
+  if(weekSel==null){const i=weeks.findIndex(w=>w.days.includes(t));weekSel=i<0?(t<MISSION_START?0:weeks.length-1):i;}
+  weekSel=clamp(weekSel,0,weeks.length-1);
+  const w=weeks[weekSel],s=weekStats(w),hrs=m=>(m/60).toFixed(1);
+  const first=w.inRange[0],last=w.inRange[w.inRange.length-1];
+  const daily=w.days.map(k=>{const out=k<MISSION_START||k>MISSION_END||k>t,d=state.days[k],has=hasData(d),sc=has?scoreDay(d).total:0;
+    return {l:fmtDate(k,{weekday:'short'}),v:sc,muted:out,color:has?scoreColor(sc):null};});
+  const focus=w.days.map(k=>{const out=k<MISSION_START||k>MISSION_END||k>t,m=focusedMinutes(state.days[k]);return {l:fmtDate(k,{weekday:'short'}),v:m,fmt:hrs(m)+'h',muted:out};});
+  const trend=weeks.map(x=>({l:'W'+x.n,v:weekStats(x).avg,muted:x.inRange[0]>t}));
+  return `<div class="section-head"><div><h1>Weekly review</h1><p class="muted small">Week ${w.n} · ${fmtDate(first,{month:'short',day:'numeric'})} – ${fmtDate(last,{month:'short',day:'numeric'})}</p></div>
+  <div class="btn-row"><button class="btn btn-sm" data-action="weekNav" data-d="-1"${weekSel===0?' disabled':''}>← Prev</button><button class="btn btn-sm" data-action="weekNav" data-d="1"${weekSel===weeks.length-1?' disabled':''}>Next →</button></div></div>
+  <div class="stats">${stat('Avg score',s.avg,'unlogged days count as 0')}${stat('Focused',hrs(s.focus)+'h')}${stat('Days logged',`${s.logged}/${s.elapsed}`)}${stat('Days missed',s.missed,'no data recorded')}
+  ${stat('Prayer/Bible days',s.prayerDays)}${stat('Exercise days',s.exDays)}${stat('Reading',s.readMin+' min')}${stat('Python',hrs(s.py)+'h')}
+  ${stat('Cybersecurity',hrs(s.cy)+'h')}${stat('Web dev',hrs(s.wd)+'h')}${stat('Client / work',hrs(s.work)+'h')}${stat('Content pieces',s.content)}
+  ${stat('Outreach + follow-ups',s.outreach)}${stat('Prospects added',s.c_researched)}${stat('Calls / proposals',`${s.c_call} / ${s.c_proposal}`)}${stat('Deals closed',s.c_won)}${stat('Money earned',money(s.money))}</div>
+  <div class="grid g2"><section class="card"><div class="card-h"><h2>Daily score</h2></div>${barChart(daily)}</section>
+  <section class="card"><div class="card-h"><h2>Focused hours</h2></div>${barChart(focus)}</section></div>
+  <section class="card"><div class="card-h"><h2>Average score by week</h2></div>${barChart(trend)}</section>`;
+}
+
+function viewHistory(){
+  const t=todayKey(),wd=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const logged=[],strong=[];
+  const months=[[2026,9],[2026,10],[2026,11]].map(([y,m])=>{
+    const first=new Date(y,m,1),n=new Date(y,m+1,0).getDate(),off=(first.getDay()+6)%7;let cells='';
+    for(let i=0;i<off;i++)cells+='<span class="cal-cell out"></span>';
+    for(let day=1;day<=n;day++){
+      const k=dateKey(new Date(y,m,day)),inR=k>=MISSION_START&&k<=MISSION_END,d=state.days[k],has=hasData(d),sc=has?scoreDay(d).total:0;
+      if(!inR){cells+='<span class="cal-cell out"></span>';continue;}
+      if(has){logged.push(sc);if(sc>=80)strong.push(k);}
+      const cls=!has?'none':sc>=80?'good':sc>=60?'mid':'bad';
+      cells+=`<button class="cal-cell c-${cls}${k===t?' today':''}" data-action="dayOpen" data-k="${k}"${k>t?' disabled':''} aria-label="${fmtDate(k,LONG)}${has?`, score ${sc}`:', no data'}"><span>${day}</span><span class="cs mono">${has?sc:''}</span></button>`;
+    }
+    return `<div class="cal-month"><h2>${first.toLocaleDateString('en-US',{month:'long',year:'numeric'})}</h2><div class="cal">${wd.map(x=>`<span class="cal-h">${x}</span>`).join('')}${cells}</div></div>`;
+  });
+  const avg=logged.length?Math.round(logged.reduce((a,b)=>a+b,0)/logged.length):0;
+  return `<div class="section-head"><div><h1>History</h1><p class="muted small">Every day from Oct 7 to Dec 31. Nothing here can be reset.</p></div></div>
+  <div class="notice"><strong>${ANTI_RESET}</strong></div>
+  <div class="stats">${stat('Days logged',`${logged.length}/${daysElapsed()}`)}${stat('Avg (logged)',avg)}${stat('Strong days',strong.length,'80+')}${stat('Days left',daysLeft())}</div>
+  <section class="card grid"><div class="legend"><span><i style="background:var(--green)"></i>Strong (80+)</span><span><i style="background:var(--yellow)"></i>Average (60–79)</span><span><i style="background:var(--red)"></i>Weak (&lt;60)</span><span><i style="background:var(--gray)"></i>No data</span></div>
+  <div class="grid g3">${months.join('')}</div></section>`;
+}
+function openDayModal(k){
+  const d=state.days[k],has=hasData(d),s=scoreDay(d),c=classify(s.total),r=d?d.review:emptyReview();
+  openModal(`<div class="card-h" style="margin:0"><h3>${fmtDate(k,LONG)}</h3>${has?`<span class="badge cls-${c.cls}">${s.total}/100 · ${c.label}</span>`:'<span class="badge">No data</span>'}</div>
+  <div class="stats">${stat('Score',s.total)}${stat('Completion',completion(d)+'%')}${stat('Focused',fmtDur(focusedMinutes(d)))}${stat('Habits',d?HABITS.filter(h=>d.habits[h.key].done).length:0)}</div>
+  <div class="kv"><div><b>Main achievement</b>${esc(firstSentence(r.accomplished))||'<span class="faint">—</span>'}</div><div><b>Main failure</b>${esc(firstSentence(r.failed))||'<span class="faint">—</span>'}</div><div><b>One lesson</b>${esc(firstSentence(r.learned))||'<span class="faint">—</span>'}</div></div>
+  <div class="score-rows">${s.parts.map(p=>`<div class="srow"><span>${p.label}</span><div class="bar"><i style="width:${p.pts/p.max*100}%"></i></div><span class="mono">${p.pts}/${p.max}</span></div>`).join('')}</div>
+  <div class="modal-actions"><span class="spacer"></span><button class="btn" data-action="closeModal">Close</button><button class="btn btn-primary" data-action="openDay" data-k="${k}">Open full record</button></div>`);
+}
+
+function viewMission(){
+  const el=daysElapsed(),left=daysLeft(),timePct=Math.round(el/TOTAL_DAYS*100);
+  const overall=Math.round(state.mission.reduce((a,x)=>a+(Number(x.progress)||0),0)/state.mission.length);
+  return `<div class="section-head"><div><h1>December mission</h1><p class="muted small">Progress is set by you, from evidence. Nothing here moves on its own.</p></div></div>
+  <div class="stats">${stat('Days elapsed',`${el}/${TOTAL_DAYS}`)}${stat('Days left',left)}${stat('Mission progress',`<span id="missionOverall">${overall}</span>%`)}${stat('Time used',timePct+'%')}</div>
+  <section class="card"><div class="card-h"><h2>Time vs progress</h2></div><div class="cmp">
+    <div class="cmp-row"><span>Time used</span><div class="bar"><i style="width:${timePct}%;background:var(--faint)"></i></div><span class="mono">${timePct}%</span></div>
+    <div class="cmp-row"><span>Mission progress</span><div class="bar"><i id="missionBar" style="width:${overall}%"></i></div><span class="mono" id="missionOverall2">${overall}%</span></div></div>
+    <p class="note">If time used keeps running ahead of progress, the plan or the effort has to change.</p></section>
+  <section class="card"><details><summary>Mission statement</summary><div style="margin-top:10px">${missionHTML()}</div></details></section>
+  <div class="areas">${state.mission.map(a=>`<article class="card area"><div class="card-h" style="margin:0"><h3>${esc(a.name)}</h3><span class="mono" id="ap-${a.key}">${a.progress}%</span></div>
+    <div class="bar"><i id="apb-${a.key}" style="width:${a.progress}%"></i></div>
+    <input type="range" min="0" max="100" step="1" value="${a.progress}" data-bind="areaProgress" data-k="${a.key}" aria-label="${esc(a.name)} progress">
+    <label class="lbl">Current status (evidence)<textarea class="input" rows="2" data-bind="areaField" data-f="current" data-k="${a.key}">${esc(a.current)}</textarea></label>
+    <label class="lbl">Target by Dec 31<textarea class="input" rows="2" data-bind="areaField" data-f="target" data-k="${a.key}">${esc(a.target)}</textarea></label>
+    <label class="lbl">Notes<textarea class="input" rows="2" data-bind="areaField" data-f="notes" data-k="${a.key}">${esc(a.notes)}</textarea></label>
+    <p class="faint small">Last updated: ${a.updated?fmtDate(a.updated):'never'}</p></article>`).join('')}</div>`;
+}
+
+function financeTotals(){
+  const f=state.finance,E=f.entries,t=todayKey(),wk=mondayOf(t),wkEnd=addDays(wk,6),mo=t.slice(0,7);
+  const sum=fn=>E.filter(fn).reduce((s,e)=>s+Number(e.amount||0),0);
+  const inc=e=>e.type==='income';
+  const target=f.targetAuto?Number(f.baseline||0)*20:Number(f.target||0);
+  const r={today:sum(e=>inc(e)&&e.date===t),week:sum(e=>inc(e)&&e.date>=wk&&e.date<=wkEnd),month:sum(e=>inc(e)&&e.date.slice(0,7)===mo),
+    income:sum(inc),expenses:sum(e=>e.type==='expense'),savings:sum(e=>e.type==='saving'),biz:sum(e=>inc(e)&&/business revenue/i.test(e.category||'')),target};
+  r.net=r.income-r.expenses;r.progress=target>0?Math.round(r.month/target*100):0;
+  r.multiple=Number(f.baseline)>0?(r.month/Number(f.baseline)):null;
+  r.months=['2026-10','2026-11','2026-12'].map(m=>({m,v:sum(e=>inc(e)&&e.date.slice(0,7)===m)}));
+  return r;
+}
+function viewFinance(){
+  const f=state.finance,r=financeTotals();
+  const rows=f.entries.slice().sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
+  return `<div class="section-head"><div><h1>Finance</h1><p class="muted small">Baseline = your monthly income before Oct 7. Target = monthly income by December.</p></div></div>
+  <section class="card"><div class="card-h"><h2>Baseline & 20x target</h2></div><div class="row2">
+    <label class="lbl">Monthly income baseline (${esc(state.settings.currency)})<input type="number" class="input mono" min="0" step="any" inputmode="decimal" data-change="finBaseline" value="${f.baseline||''}" placeholder="Enter honestly"></label>
+    <label class="lbl">Monthly target (${esc(state.settings.currency)})<input type="number" class="input mono" min="0" step="any" inputmode="decimal" data-change="finTarget" value="${f.targetAuto?(r.target||''):(f.target||'')}"${f.targetAuto?' disabled':''}></label></div>
+    <label class="check" style="margin-top:8px"><input type="checkbox" data-change="finAuto"${f.targetAuto?' checked':''}> Target = 20× baseline</label>
+    ${!Number(f.baseline)?'<p class="note">No baseline entered. Without it, “20x” cannot be measured.</p>':''}</section>
+  <div class="stats">${stat('This month',money(r.month),r.target?`${r.progress}% of target`:'')}${stat('Multiple',r.multiple==null?'—':r.multiple.toFixed(1)+'×','this month vs baseline')}${stat('Today',money(r.today))}${stat('This week',money(r.week))}
+  ${stat('Total income',money(r.income),'all entries')}${stat('Expenses',money(r.expenses))}${stat('Net',money(r.net))}${stat('Saved',money(r.savings))}${stat('Business revenue',money(r.biz))}${stat('20x target',r.target?money(r.target):'—','per month')}</div>
+  <section class="card"><div class="card-h"><h2>Monthly income vs target</h2></div><div class="bar" style="height:10px;margin-bottom:14px"><i style="width:${clamp(r.progress,0,100)}%"></i></div>${barChart(r.months.map(x=>({l:parseKey(x.m+'-01').toLocaleDateString('en-US',{month:'short'}),v:x.v,fmt:money(x.v)})))}</section>
+  <section class="card"><div class="card-h"><h2>Add entry</h2></div>
+  <form id="finForm" class="form"><div class="row2"><label class="lbl">Date<input type="date" class="input" name="date" value="${todayKey()}" required></label>
+    <label class="lbl">Type<select class="input" name="type"><option value="income">Income</option><option value="expense">Expense</option><option value="saving">Moved to savings</option></select></label></div>
+    <div class="row2"><label class="lbl">Category<input class="input" name="category" list="finCats" placeholder="e.g. Client project"></label>
+    <label class="lbl">Amount<input type="number" class="input mono" name="amount" min="0" step="any" inputmode="decimal" required></label></div>
+    <datalist id="finCats"><option value="Client project"><option value="Business revenue"><option value="Freelance"><option value="Tools / software"><option value="Data / internet"><option value="Transport"><option value="Food"><option value="Family"><option value="Other"></datalist>
+    <label class="lbl">Note<input class="input" name="note"></label><button class="btn btn-primary" type="submit">Add entry</button></form></section>
+  <section class="card"><div class="card-h"><h2>Entries</h2><span class="muted small">${rows.length}</span></div><div class="list">${rows.map(e=>`<div class="li"><div class="li-main"><strong style="color:${e.type==='income'?'var(--green)':e.type==='expense'?'var(--red)':'var(--blue)'}">${e.type==='expense'?'−':e.type==='income'?'+':'→ '}${money(e.amount)}</strong><span>${fmtDate(e.date)} · ${esc(e.category||e.type)}${e.note?' · '+esc(e.note):''}</span></div><button class="btn btn-sm btn-ghost btn-danger" data-action="finDelete" data-id="${e.id}">Delete</button></div>`).join('')||'<p class="empty">No entries yet.</p>'}</div></section>`;
+}
+
+function viewReading(){
+  const B=state.books,readMin=Object.values(state.days).reduce((s,d)=>s+hm(d,'reading'),0);
+  const pages=B.reduce((s,b)=>s+(Number(b.currentPage)||0),0),done=B.filter(b=>b.finished).length;
+  return `<div class="section-head"><div><h1>Reading</h1><p class="muted small">Reading minutes come from the Reading habit and timer.</p></div><button class="btn btn-sm btn-primary" data-action="bookEdit">+ Add book</button></div>
+  <div class="stats">${stat('Books started',B.length)}${stat('Completed',done)}${stat('Pages read',pages)}${stat('Reading time',fmtDur(readMin))}</div>
+  <div class="books">${B.map(b=>{const p=Number(b.totalPages)>0?Math.round(clamp((Number(b.currentPage)||0)/b.totalPages,0,1)*100):0;
+    return `<article class="card book"><div class="card-h" style="margin:0"><div><h3>${esc(b.title)}</h3><p class="muted small">${esc(b.author||'Unknown author')}${b.category?' · '+esc(b.category):''}</p></div>${b.finished?'<span class="badge b-done">Finished</span>':`<span class="mono">${p}%</span>`}</div>
+    <div class="bar"><i style="width:${p}%"></i></div>
+    <div class="page-row">Page <input type="number" class="input mono" min="0" inputmode="numeric" data-change="bookPage" data-id="${b.id}" value="${b.currentPage||0}"> of ${b.totalPages||'?'}</div>
+    <p class="faint small">${b.started?'Started '+fmtDate(b.started):''}${b.finished?' · Finished '+fmtDate(b.finished):''}</p>
+    ${b.lessons||b.apply?`<details><summary>Lessons & application</summary><div class="kv" style="margin-top:8px">${b.lessons?`<div><b>Key lessons</b>${esc(b.lessons)}</div>`:''}${b.apply?`<div><b>How I will apply it</b>${esc(b.apply)}</div>`:''}</div></details>`:''}
+    <div class="btn-row"><button class="btn btn-sm" data-action="bookEdit" data-id="${b.id}">Edit</button><button class="btn btn-sm btn-ghost btn-danger" data-action="bookDelete" data-id="${b.id}">Delete</button></div></article>`;}).join('')||'<p class="empty">No books yet. Add the one you are reading now.</p>'}</div>`;
+}
+function openBookModal(id){
+  const b=state.books.find(x=>x.id===id)||{};
+  openModal(`<h3>${b.id?'Edit book':'Add book'}</h3><form id="bookForm" class="form" data-id="${b.id||''}">
+  <label class="lbl">Title<input class="input" name="title" required value="${esc(b.title)}"></label>
+  <div class="row2"><label class="lbl">Author<input class="input" name="author" value="${esc(b.author)}"></label><label class="lbl">Category<input class="input" name="category" value="${esc(b.category)}" list="bookCats"></label></div>
+  <datalist id="bookCats"><option value="Faith"><option value="Business"><option value="Self-discipline"><option value="Programming"><option value="Cybersecurity"><option value="Finance"><option value="Communication"></datalist>
+  <div class="row2"><label class="lbl">Current page<input type="number" class="input" name="currentPage" min="0" value="${b.currentPage||0}"></label><label class="lbl">Total pages<input type="number" class="input" name="totalPages" min="0" value="${b.totalPages||''}"></label></div>
+  <div class="row2"><label class="lbl">Date started<input type="date" class="input" name="started" value="${b.started||todayKey()}"></label><label class="lbl">Date finished<input type="date" class="input" name="finished" value="${b.finished||''}"></label></div>
+  <label class="lbl">Key lessons<textarea class="input" name="lessons" rows="3">${esc(b.lessons)}</textarea></label>
+  <label class="lbl">How I will apply it<textarea class="input" name="apply" rows="3">${esc(b.apply)}</textarea></label>
+  <div class="modal-actions"><span class="spacer"></span><button type="button" class="btn" data-action="closeModal">Cancel</button><button type="submit" class="btn btn-primary">Save</button></div></form>`);
+}
+
+function journalFields(e,idPrefix){
+  return `<div class="row2"><label class="lbl">Date<input type="date" class="input" name="date" value="${e.date||activeDate}" required></label><span></span></div>
+  <label class="lbl">What happened<textarea class="input" name="happened" rows="3">${esc(e.happened)}</textarea></label>
+  <label class="lbl">What I learned<textarea class="input" name="learned" rows="2">${esc(e.learned)}</textarea></label>
+  <label class="lbl">What I need to change<textarea class="input" name="change" rows="2">${esc(e.change)}</textarea></label>
+  <label class="lbl">What I will do tomorrow<textarea class="input" name="tomorrow" rows="2">${esc(e.tomorrow)}</textarea></label>`;
+}
+function viewJournal(){
+  const J=state.journal.slice().sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:(b.created||'').localeCompare(a.created||''));
+  return `<div class="section-head"><div><h1>Lessons & journal</h1><p class="muted small">${J.length} entr${J.length===1?'y':'ies'}</p></div></div>
+  <section class="card"><div class="card-h"><h2>New entry</h2></div><form id="journalNew" class="form">${journalFields({})}<button class="btn btn-primary" type="submit">Save entry</button></form></section>
+  ${J.map(e=>`<article class="card"><div class="card-h"><h3>${fmtDate(e.date,LONG)}</h3><div class="btn-row"><button class="btn btn-sm" data-action="journalEdit" data-id="${e.id}">Edit</button><button class="btn btn-sm btn-ghost btn-danger" data-action="journalDelete" data-id="${e.id}">Delete</button></div></div>
+  <div class="kv">${[['What happened',e.happened],['What I learned',e.learned],['What I need to change',e.change],['What I will do tomorrow',e.tomorrow]].filter(x=>txt(x[1])).map(([l,v])=>`<div><b>${l}</b><span style="white-space:pre-wrap">${esc(v)}</span></div>`).join('')}</div></article>`).join('')}`;
+}
+
+function viewData(){
+  const s=state.settings,size=(()=>{try{return ((localStorage.getItem(STORAGE_KEY)||'').length/1024).toFixed(1);}catch(_){return '?';}})();
+  const perm=!('Notification' in window)?'Not supported in this browser':({granted:'Allowed',denied:'Blocked. Re-enable it in the browser’s site settings.',default:'Not requested yet'})[Notification.permission];
+  return `<div class="section-head"><div><h1>Settings & data</h1></div></div>
+  <section class="card form"><div class="card-h" style="margin:0"><h2>Display</h2></div>
+    <div class="row2"><label class="lbl">Theme<select class="input" data-change="theme"><option value="dark"${s.theme==='dark'?' selected':''}>Dark</option><option value="light"${s.theme==='light'?' selected':''}>Light</option></select></label>
+    <label class="lbl">Currency symbol<input class="input" data-change="currency" value="${esc(s.currency)}" maxlength="4"></label></div></section>
+  <section class="card form"><div class="card-h" style="margin:0"><h2>Reminders</h2><span class="muted small">System notifications: ${perm}</span></div>
+    <div class="notice"><strong>How reminders really work</strong><span>This is a web page, not an app. Reminders only fire while this page is open in a browser tab, and the computer or phone is awake. Closing the tab, closing the browser, or the phone locking the browser stops them. System pop-ups also need browser permission; on Android Chrome, a file opened like this usually can’t show system pop-ups at all, so you’ll get the in-page alert, sound and vibration instead.</span></div>
+    <label class="check"><input type="checkbox" data-change="reminders"${s.reminders?' checked':''}> In-page alerts at block start times (with sound)</label>
+    <div class="btn-row"><button class="btn" data-action="enableNotif">Enable system notifications</button><button class="btn" data-action="testNotif">Send test reminder</button></div>
+    <div class="list">${state.template.slice().sort(byStart).map(t=>`<label class="li check"><span class="li-main"><strong>${esc(t.name)}</strong><span class="mono">${fmt12(t.start)}</span></span><input type="checkbox" data-change="tplRemind" data-id="${t.id}"${t.remind?' checked':''}></label>`).join('')}</div></section>
+  <section class="card form"><div class="card-h" style="margin:0"><h2>Data</h2><span class="muted small">${size} KB in this browser</span></div>
+    <p class="muted small">Your data lives only in this browser on this device. Last backup: ${s.lastBackup?fmtDate(dateKey(new Date(s.lastBackup)))+' '+fmtTime(s.lastBackup):'never'}.</p>
+    <div class="btn-row"><button class="btn btn-primary" data-action="exportData">Export / backup JSON</button><button class="btn" data-action="copyData">Copy JSON</button><button class="btn" data-action="importData">Import JSON</button></div>
+    <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px"><button class="btn btn-danger" data-action="clearData">Clear all data</button><p class="faint small" style="margin-top:6px">Permanent. You will be asked to type DELETE. Export first.</p></div></section>`;
+}
+
+const VIEWS={today:viewToday,clients:viewClients,schedule:viewSchedule,habits:viewHabits,timer:viewTimer,review:viewReview,week:viewWeek,history:viewHistory,mission:viewMission,finance:viewFinance,reading:viewReading,journal:viewJournal,data:viewData};
+
+/* =====================================================================
+   9. RENDERING
+   ===================================================================== */
+function renderNav(){
+  $('#sideNav').innerHTML=NAV.map(n=>`<button data-action="nav" data-view="${n.v}">${n.l}</button>`).join('');
+  $('#bottomNav').innerHTML=BOTTOM.map(v=>`<button class="bn" data-action="nav" data-view="${v}">${ICONS[v]}<span>${NAV.find(n=>n.v===v).s||NAV.find(n=>n.v===v).l}</span></button>`).join('')+
+    `<button class="bn" data-action="openSheet" id="bnMore">${ICONS.more}<span>More</span></button>`;
+  $('#sheetGrid').innerHTML=NAV.filter(n=>!BOTTOM.includes(n.v)).map(n=>`<button data-action="nav" data-view="${n.v}">${n.l}</button>`).join('');
+}
+function markNav(){
+  $$('[data-action="nav"][data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===currentView));
+  const more=$('#bnMore');if(more)more.classList.toggle('active',!BOTTOM.includes(currentView));
+}
+function refreshHeader(){
+  const t=todayKey(),d=state.days[t],now=new Date();
+  $('#hdDate').innerHTML=`<strong>${now.toLocaleDateString('en-US',{weekday:'long'})}</strong>${now.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}`;
+  $('#hdLeft').textContent=daysLeft();
+  $('#hdComp').textContent=completion(d)+'%';
+  const s=scoreDay(d).total;$('#hdScore').textContent=s;$('#hdScore').style.color=hasData(d)?scoreColor(s):'';
+  $('#hdStreak').textContent=streak();
+}
+function renderBanner(){
+  let h='';
+  if(!storageOK)h+=`<div class="notice"><strong>Storage is blocked in this browser.</strong><span>Nothing will be saved after you close this page. Open the file in Chrome, Edge or Firefox with site data allowed.</span></div>`;
+  if(corruptRecovered)h+=`<div class="notice"><strong>Saved data could not be read.</strong><span>A copy was kept in browser storage. Import your latest backup in Settings & Data.</span></div>`;
+  if(activeDate!==todayKey()&&['today','schedule','habits','review'].includes(currentView))
+    h+=`<div class="notice"><span>Editing <strong>${fmtDate(activeDate,LONG)}</strong>. Changes are saved to that day.</span><button class="btn btn-sm" data-action="backToday">Back to today</button></div>`;
+  $('#banner').innerHTML=h?`<div class="banner grid">${h}</div>`:'';
+}
+function renderView(){
+  $('#view').innerHTML=(VIEWS[currentView]||viewToday)();
+  renderProspectList(); // no-op unless the prospect list is on screen
+  updateCountdowns(new Date());updateTimerUI();
+}
+function render(){renderBanner();refreshHeader();renderView();markNav();}
+function updateCountdowns(now){
+  $$('[data-countdown]').forEach(el=>{
+    const d=state.days[el.dataset.k],b=d&&d.schedule.find(x=>x.id===el.dataset.countdown);if(!b)return;
+    const ms=blockEndDate(el.dataset.k,b)-now;
+    el.textContent=ms>=0?`${fmtHMS(ms)} left`:`Over by ${fmtHMS(-ms)}`;
+    el.classList.toggle('over',ms<0);
+  });
+}
+function updateTimerUI(){
+  const t=state.timer,disp=$('#timerDisplay'),pill=$('#hdTimer');
+  if(disp)disp.textContent=fmtHMS(timerElapsed());
+  if(t.status==='idle'){pill.hidden=true;return;}
+  const cat=TIMER_CATEGORIES.find(c=>c.key===t.category);
+  pill.hidden=false;pill.classList.toggle('paused',t.status==='paused');
+  pill.innerHTML=`<span class="dot"></span>${esc(cat?cat.label:'Timer')} <span class="mono">${fmtHMS(timerElapsed())}</span>`;
+}
+function route(){
+  const v=location.hash.slice(1);
+  currentView=VIEWS[v]?v:'today';
+  closeSheet();render();window.scrollTo(0,0);
+}
+function go(v){if(location.hash==='#'+v)route();else location.hash=v;}
+function openSheet(){$('#moreSheet').hidden=false;$('#sheetBackdrop').hidden=false;}
+function closeSheet(){$('#moreSheet').hidden=true;$('#sheetBackdrop').hidden=true;}
+function applyTheme(){
+  document.documentElement.dataset.theme=state.settings.theme;
+  $('meta[name="theme-color"]').setAttribute('content',state.settings.theme==='light'?'#f4f5f7':'#0a0c0f');
+}
+
+/* =====================================================================
+   10. EVENTS — one delegated listener per event type.
+   data-action = click, data-bind = live typing, data-change = committed change.
+   ===================================================================== */
+const findBlock=id=>getDay(activeDate).schedule.find(b=>b.id===id);
+
+const ACTIONS={
+  nav:el=>go(el.dataset.view),
+  openSheet,closeSheet,closeModal,
+  backToday:()=>{activeDate=todayKey();render();},
+  blockStart:el=>{
+    if(activeDate!==todayKey())return;
+    const b=findBlock(el.dataset.id);if(!b)return;
+    b.actualStart=new Date().toISOString();b.actualEnd=null;b.status='active';save();render();toast(`Started: ${b.name}`);
+  },
+  blockComplete:el=>{
+    const b=findBlock(el.dataset.id);if(!b)return;
+    b.actualEnd=new Date().toISOString();b.status='done';save();render();
+    const v=timingVerdict(activeDate,b);
+    toast(`Completed: ${b.name}${v?` · ${v.t==='on time'?'on time':fmtDur(v.m)+' '+v.t}`:''}${b.actualStart?` · took ${fmtDur(actualMins(b))}`:''}`);
+  },
+  blockEdit:el=>openBlockModal(el.dataset.id),
+  blockAdd:()=>openBlockModal(null),
+  blockDelete:()=>{
+    const f=$('#blockForm'),id=f.dataset.id,d=getDay(activeDate),b=d.schedule.find(x=>x.id===id);if(!b)return;
+    const alsoTpl=f.elements.tpl.checked;
+    if(!confirm(`Delete “${b.name}” from this day${alsoTpl?' and from your default schedule':''}?`))return;
+    d.schedule=d.schedule.filter(x=>x.id!==id);
+    if(alsoTpl&&b.tid)state.template=state.template.filter(t=>t.id!==b.tid);
+    save();closeModal();render();
+  },
+  counter:el=>{
+    const d=getDay(activeDate),k=el.dataset.k;
+    d.counters[k]=Math.max(0,(Number(d.counters[k])||0)+Number(el.dataset.d));
+    $('#cnt-'+k).textContent=d.counters[k];save();refreshHeader();
+  },
+  timerStart,timerPause,timerResume,timerStop,timerReset,
+  sessionDelete:el=>{
+    const d=getDay(todayKey()),s=d.sessions.find(x=>x.id===el.dataset.id);if(!s)return;
+    if(!confirm(`Delete this ${s.minutes}-minute session? Its minutes will be removed from today.`))return;
+    const cat=TIMER_CATEGORIES.find(c=>c.key===s.category);
+    if(cat&&cat.habit){const h=d.habits[cat.habit];h.minutes=Math.max(0,(Number(h.minutes)||0)-s.minutes);}
+    d.sessions=d.sessions.filter(x=>x.id!==s.id);save();render();
+  },
+  genFocus:()=>{const d=getDay(activeDate);d.review.focus=generateFocus(d);save();render();toast('Tomorrow’s focus saved. It will show on the next day’s Today screen.');},
+  weekNav:el=>{weekSel+=Number(el.dataset.d);renderView();},
+  dayOpen:el=>openDayModal(el.dataset.k),
+  openDay:el=>{activeDate=el.dataset.k;getDay(activeDate);closeModal();go('today');},
+  finDelete:el=>{
+    const e=state.finance.entries.find(x=>x.id===el.dataset.id);if(!e)return;
+    if(!confirm(`Delete this ${e.type} of ${money(e.amount)}?`))return;
+    state.finance.entries=state.finance.entries.filter(x=>x.id!==e.id);save();render();
+  },
+  bookEdit:el=>openBookModal(el.dataset.id),
+  bookDelete:el=>{
+    const b=state.books.find(x=>x.id===el.dataset.id);if(!b||!confirm(`Delete “${b.title}”?`))return;
+    state.books=state.books.filter(x=>x.id!==b.id);save();render();
+  },
+  journalEdit:el=>{
+    const e=state.journal.find(x=>x.id===el.dataset.id);if(!e)return;
+    openModal(`<h3>Edit entry</h3><form id="journalEdit" class="form" data-id="${e.id}">${journalFields(e)}<div class="modal-actions"><span class="spacer"></span><button type="button" class="btn" data-action="closeModal">Cancel</button><button type="submit" class="btn btn-primary">Save</button></div></form>`);
+  },
+  journalDelete:el=>{
+    if(!confirm('Delete this journal entry permanently?'))return;
+    state.journal=state.journal.filter(x=>x.id!==el.dataset.id);save();render();
+  },
+  enableNotif:()=>enableNotifications(),
+  testNotif:()=>notify('Test reminder','This is how a schedule reminder will look.'),
+  exportData:()=>{
+    state.settings.lastBackup=new Date().toISOString();save();
+    const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`life-os-backup-${todayKey()}.json`;
+    document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+    toast('Backup downloaded. Keep it somewhere other than this computer too.');render();
+  },
+  copyData:async()=>{
+    const json=JSON.stringify(state);
+    try{await navigator.clipboard.writeText(json);}
+    catch(_){const ta=document.createElement('textarea');ta.value=json;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(__){}ta.remove();}
+    toast('Data copied to clipboard.');
+  },
+  importData:()=>$('#importFile').click(),
+  clearData:()=>{
+    const v=prompt('This permanently deletes every day, book, entry and setting in this browser.\n\nType DELETE to confirm:');
+    if(v!=='DELETE'){if(v!==null)toast('Not deleted. You must type DELETE exactly.','error');return;}
+    try{localStorage.removeItem(STORAGE_KEY);localStorage.removeItem(FIRED_KEY);}catch(_){}
+    state=defaultState();activeDate=todayKey();getDay(activeDate);save();applyTheme();render();toast('All data cleared.');
+  }
+};
+
+const BINDS={
+  blockNote:el=>{const b=findBlock(el.dataset.id);if(b){b.notes=el.value;saveSoon();}},
+  habitMin:el=>{
+    const d=getDay(activeDate),h=d.habits[el.dataset.k];
+    h.minutes=Math.max(0,parseInt(el.value,10)||0);
+    if(h.minutes>0&&!h.done){h.done=true;const row=$('#hab-'+el.dataset.k);row.classList.add('done');row.querySelector('input[type=checkbox]').checked=true;}
+    $('#habMin').textContent=HABITS.reduce((s,x)=>s+hm(d,x.key),0);
+    $('#habDone').textContent=HABITS.filter(x=>d.habits[x.key].done).length;
+    saveSoon();refreshHeader();
+  },
+  habitNote:el=>{getDay(activeDate).habits[el.dataset.k].notes=el.value;saveSoon();},
+  review:el=>{getDay(activeDate).review[el.dataset.q]=el.value;saveSoon();refreshHeader();},
+  areaField:el=>{const a=state.mission.find(x=>x.key===el.dataset.k);a[el.dataset.f]=el.value;a.updated=todayKey();saveSoon();},
+  areaProgress:el=>{
+    const a=state.mission.find(x=>x.key===el.dataset.k);a.progress=clamp(parseInt(el.value,10)||0,0,100);a.updated=todayKey();
+    $('#ap-'+a.key).textContent=a.progress+'%';$('#apb-'+a.key).style.width=a.progress+'%';
+    const o=Math.round(state.mission.reduce((s,x)=>s+(Number(x.progress)||0),0)/state.mission.length);
+    $('#missionOverall').textContent=o;$('#missionOverall2').textContent=o+'%';$('#missionBar').style.width=o+'%';
+    saveSoon();
+  }
+};
+
+const CHANGES={
+  habitDone:el=>{
+    const d=getDay(activeDate);d.habits[el.dataset.k].done=el.checked;
+    $('#hab-'+el.dataset.k).classList.toggle('done',el.checked);
+    $('#habDone').textContent=HABITS.filter(x=>d.habits[x.key].done).length;save();refreshHeader();
+  },
+  blockStatus:el=>{const b=findBlock(el.dataset.id);if(b){b.status=el.value;save();render();}},
+  timerCat:el=>{state.timer.category=el.value;save();renderView();},
+  tplRemind:el=>{
+    const t=state.template.find(x=>x.id===el.dataset.id);if(!t)return;t.remind=el.checked;
+    const d=state.days[todayKey()];if(d)d.schedule.forEach(b=>{if(b.tid===t.id)b.remind=el.checked;});save();
+  },
+  reminders:el=>{state.settings.reminders=el.checked;save();},
+  theme:el=>{state.settings.theme=el.value;applyTheme();save();},
+  currency:el=>{state.settings.currency=el.value.trim()||'₦';save();render();},
+  finBaseline:el=>{state.finance.baseline=Math.max(0,parseFloat(el.value)||0);save();render();},
+  finTarget:el=>{state.finance.target=Math.max(0,parseFloat(el.value)||0);save();render();},
+  finAuto:el=>{state.finance.targetAuto=el.checked;if(!el.checked&&!state.finance.target)state.finance.target=Number(state.finance.baseline||0)*20;save();render();},
+  bookPage:el=>{
+    const b=state.books.find(x=>x.id===el.dataset.id);if(!b)return;
+    b.currentPage=Math.max(0,parseInt(el.value,10)||0);
+    if(Number(b.totalPages)>0&&b.currentPage>=b.totalPages&&!b.finished){b.finished=todayKey();toast(`Finished “${b.title}”. Write down the lessons.`);}
+    save();render();
+  },
+  importFile:el=>{
+    const file=el.files&&el.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=()=>{
+      try{
+        const p=JSON.parse(reader.result);
+        if(!p||typeof p!=='object'||typeof p.days!=='object')throw new Error('Not a Life OS backup');
+        const n=Object.keys(p.days).length;
+        if(!confirm(`Replace ALL current data with this backup (${n} day records)? Current data will be overwritten.`))return;
+        try{localStorage.setItem(STORAGE_KEY+'.preimport',JSON.stringify(state));}catch(_){} // safety copy
+        state=hydrate(p);activeDate=todayKey();getDay(activeDate);save();applyTheme();render();toast('Backup imported.');
+      }catch(err){toast('Import failed: '+err.message,'error');}
+      finally{el.value='';}
+    };
+    reader.readAsText(file);
+  }
+};
+
+const FORMS={
+  blockForm:f=>{
+    const d=getDay(activeDate),F=f.elements,name=F.name.value.trim(),start=F.start.value,end=F.end.value;
+    if(!name||!start||!end){toast('Name, start and end are required.','error');return;}
+    let b=d.schedule.find(x=>x.id===f.dataset.id);
+    if(!b){b={id:uid(),tid:null,status:'pending',actualStart:null,actualEnd:null,notes:''};d.schedule.push(b);}
+    Object.assign(b,{name,start,end,notes:F.notes.value,remind:F.remind.checked,status:F.status.value});
+    b.actualStart=F.aStart.value?timeToISO(activeDate,F.aStart.value):null;
+    b.actualEnd=F.aEnd.value?timeToISO(activeDate,F.aEnd.value,b.actualStart):null;
+    if(F.tpl.checked){
+      let t=b.tid&&state.template.find(x=>x.id===b.tid);
+      if(!t){t={id:uid()};state.template.push(t);b.tid=t.id;}
+      Object.assign(t,{name,start,end,remind:b.remind});state.template.sort(byStart);
+    }
+    d.schedule.sort(byStart);save();closeModal();render();toast('Block saved.');
+  },
+  finForm:f=>{
+    const F=f.elements,amount=parseFloat(F.amount.value);
+    if(!(amount>0)){toast('Enter an amount above 0.','error');return;}
+    state.finance.entries.push({id:uid(),date:F.date.value||todayKey(),type:F.type.value,category:F.category.value.trim(),amount,note:F.note.value.trim()});
+    const d=state.days[F.date.value];if(d&&!d.habits.finance.done)d.habits.finance.done=true;
+    save();render();toast('Entry added.');
+  },
+  bookForm:f=>{
+    const F=f.elements;let b=state.books.find(x=>x.id===f.dataset.id);
+    if(!b){b={id:uid()};state.books.push(b);}
+    Object.assign(b,{title:F.title.value.trim(),author:F.author.value.trim(),category:F.category.value.trim(),
+      currentPage:Math.max(0,parseInt(F.currentPage.value,10)||0),totalPages:Math.max(0,parseInt(F.totalPages.value,10)||0),
+      started:F.started.value,finished:F.finished.value,lessons:F.lessons.value,apply:F.apply.value});
+    save();closeModal();render();
+  },
+  journalNew:f=>{
+    const F=f.elements;
+    if(![F.happened,F.learned,F.change,F.tomorrow].some(x=>txt(x.value))){toast('Write something first.','error');return;}
+    state.journal.push({id:uid(),created:new Date().toISOString(),date:F.date.value||activeDate,happened:F.happened.value,learned:F.learned.value,change:F.change.value,tomorrow:F.tomorrow.value});
+    const d=state.days[F.date.value];if(d)d.habits.journal.done=true;
+    save();render();toast('Journal entry saved.');
+  },
+  journalEdit:f=>{
+    const e=state.journal.find(x=>x.id===f.dataset.id),F=f.elements;if(!e)return;
+    Object.assign(e,{date:F.date.value,happened:F.happened.value,learned:F.learned.value,change:F.change.value,tomorrow:F.tomorrow.value});
+    save();closeModal();render();
+  }
+};
+
+function openBlockModal(id){
+  const b=id?findBlock(id):null;
+  openModal(`<h3>${b?'Edit block':'Add block'}</h3><form id="blockForm" class="form" data-id="${b?b.id:''}">
+  <label class="lbl">Activity<input class="input" name="name" required value="${esc(b?b.name:'')}"></label>
+  <div class="row2"><label class="lbl">Planned start<input type="time" class="input" name="start" required value="${b?b.start:''}"></label><label class="lbl">Planned end<input type="time" class="input" name="end" required value="${b?b.end:''}"></label></div>
+  <div class="row2"><label class="lbl">Actual start<input type="time" class="input" name="aStart" value="${b?hhmm(b.actualStart):''}"></label><label class="lbl">Actual end<input type="time" class="input" name="aEnd" value="${b?hhmm(b.actualEnd):''}"></label></div>
+  <label class="lbl">Status<select class="input" name="status">${STATUS_OPTS.map(([v,l])=>`<option value="${v}"${(b?b.status:'pending')===v?' selected':''}>${l}</option>`).join('')}</select></label>
+  <label class="lbl">Notes<textarea class="input" name="notes" rows="2">${esc(b?b.notes:'')}</textarea></label>
+  <label class="check"><input type="checkbox" name="remind"${b&&b.remind?' checked':''}> Reminder at start time</label>
+  <label class="check"><input type="checkbox" name="tpl" checked> Also apply to my default schedule (future days)</label>
+  <div class="modal-actions">${b?'<button type="button" class="btn btn-danger" data-action="blockDelete">Delete</button>':''}<span class="spacer"></span><button type="button" class="btn" data-action="closeModal">Cancel</button><button type="submit" class="btn btn-primary">Save</button></div></form>`);
+}
+
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-action]');if(!el)return;
+  const fn=ACTIONS[el.dataset.action];if(!fn)return;
+  e.preventDefault();fn(el,e);
+});
+document.addEventListener('input',e=>{const fn=e.target.dataset&&BINDS[e.target.dataset.bind];if(fn)fn(e.target);});
+document.addEventListener('change',e=>{const fn=e.target.dataset&&CHANGES[e.target.dataset.change];if(fn)fn(e.target);});
+document.addEventListener('submit',e=>{const fn=FORMS[e.target.id];if(fn){e.preventDefault();fn(e.target);}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet();});
+window.addEventListener('hashchange',route);
+
+/* =====================================================================
+   10b. CLIENT ACQUISITION
+   Prospects live in state.crm.prospects. Every real action (adding a lead,
+   qualifying, auditing, outreach, follow-up, reply, call, proposal, win)
+   also writes a dated event to state.crm.events. The scoreboard, weekly
+   review, daily review and daily score all COUNT those events, so the
+   numbers can never drift out of sync with the prospect list.
+   ===================================================================== */
+let crmTab='today',crmPeriod='today';
+const EMPTY_FILTER={q:'',status:'',niche:'',score:'',priority:'',follow:'',source:''};
+let crmFilter=Object.assign({},EMPTY_FILTER);
+const pendingWon=[]; // won deals waiting for the "add to Finance?" question
+
+function defaultCrm(){const t={};CRM_METRICS.forEach(m=>t[m.key]=m.def);return {targets:t,prospects:[],events:[],manual:{}};}
+function newProspect(){
+  return {id:uid(),name:'',niche:'Other',location:'',website:'',instagram:'',linkedin:'',x:'',email:'',phone:'',
+    dm:'',dmRole:'',discovered:todayKey(),source:'',problem:'',evidence:'',service:'',priority:'auto',
+    ratings:{},scoreOverride:null,status:'New',nextFollowUp:'',value:0,notes:'',checklist:{},
+    audit:{problem:'',why:'',impact:'',solution:'',service:'',value:0,link:'',date:''},
+    outreach:[],stamps:{},created:new Date().toISOString(),financeAsked:false};
+}
+function normalizeProspect(x){
+  const p=Object.assign(newProspect(),x||{});
+  p.ratings=Object.assign({},x&&x.ratings);p.checklist=Object.assign({},x&&x.checklist);
+  p.stamps=Object.assign({},x&&x.stamps);p.audit=Object.assign(newProspect().audit,x&&x.audit);
+  p.outreach=Array.isArray(x&&x.outreach)?x.outreach:[];
+  return p;
+}
+const findProspect=id=>state.crm.prospects.find(p=>p.id===id);
+
+/* ---------- Events + counting ---------- */
+function crmEvent(type,pid,date,extra){state.crm.events.push(Object.assign({id:uid(),type,pid,date:date||todayKey()},extra||{}));}
+function manualSum(key,from,to){let s=0;for(const k in state.crm.manual){if(k>=from&&k<=to)s+=Number(state.crm.manual[k][key])||0;}return s;}
+function crmCount(key,from,to){
+  const E=state.crm.events.filter(e=>e.date>=from&&e.date<=to);
+  if(key==='revenue') return E.filter(e=>e.type==='won').reduce((s,e)=>s+(Number(e.amount)||0),0);
+  return Math.max(0,E.filter(e=>e.type===key).length+manualSum(key,from,to));
+}
+function periodRange(p){
+  const t=todayKey();
+  if(p==='today') return [t,t,1];
+  if(p==='week'){const m=mondayOf(t);return [m,addDays(m,6),7];}
+  if(p==='month'){const [y,mo]=t.split('-').map(Number),last=new Date(y,mo,0).getDate();return [`${t.slice(0,7)}-01`,`${t.slice(0,7)}-${pad(last)}`,last];}
+  return ['0000-00-00',t,Math.max(1,daysElapsed())];
+}
+/* Daily score share: 0..1, worth 10 of the 20 Business points.
+   Prospecting 3 · outreach & follow-ups 4 · calls & proposals 3. */
+function acqRatio(d){
+  if(!d||!d.date) return 0;
+  const T=state.crm.targets,k=d.date;
+  const grp=keys=>{
+    const t=keys.reduce((s,x)=>s+(Number(T[x])||0),0);if(!(t>0))return 0;
+    const a=keys.reduce((s,x)=>s+crmCount(x,k,k),0)+(keys.includes('outreach')?Number(d.counters.outreach)||0:0);
+    return Math.min(1,a/t);
+  };
+  return (3*grp(['researched','qualified','audited'])+4*grp(['outreach','followup'])+3*grp(['call','proposal']))/10;
+}
+
+/* ---------- Lead scoring ---------- */
+function leadScore(p){
+  if(p.scoreOverride!=null&&p.scoreOverride!=='') return clamp(Math.round(Number(p.scoreOverride))||1,1,10);
+  const v=LEAD_CRITERIA.map(([k])=>Number(p.ratings&&p.ratings[k])).filter(n=>n>0);
+  if(!v.length) return null;
+  return Math.round(v.reduce((a,b)=>a+b,0)/v.length*2); // average of 1–5 ratings × 2 = score out of 10
+}
+function leadClass(s){
+  if(s==null) return {label:'Unscored',cls:'none',key:'none'};
+  if(s>=9) return {label:'High priority',cls:'high',key:'high'};
+  if(s>=7) return {label:'Good prospect',cls:'good',key:'good'};
+  if(s>=5) return {label:'Medium',cls:'med',key:'medium'};
+  return {label:'Low priority',cls:'low',key:'low'};
+}
+function priorityKey(p){return p.priority&&p.priority!=='auto'?p.priority:leadClass(leadScore(p)).key;}
+function canQualify(ck){
+  const n=CHECKLIST.filter(([k])=>ck[k]).length;
+  const miss=QUALIFY_REQUIRED.filter(k=>!ck[k]).map(k=>CHECKLIST.find(c=>c[0]===k)[1].toLowerCase());
+  if(miss.length) return {ok:false,msg:`Still needed: ${miss.join(', ')}.`};
+  if(n<QUALIFY_MIN) return {ok:false,msg:`Tick at least ${QUALIFY_MIN} items (${n} so far).`};
+  return {ok:true,msg:'Enough evidence to qualify this prospect.'};
+}
+
+/* ---------- Status changes ---------- */
+function stamp(p,key,date){
+  if(p.stamps[key]) return;           // each stage counts once per prospect
+  p.stamps[key]=date;
+  const ev=STAMP_EVENT[key];
+  if(ev) crmEvent(ev,p.id,date,key==='won'?{amount:Number(p.value)||0}:{});
+  if(key==='won') pendingWon.push(p.id);
+}
+function setStatus(p,s,date){p.status=s;const k=STAMP[s];if(k)stamp(p,k,date||todayKey());if(CLOSED.includes(s))p.nextFollowUp='';}
+/* Move forward only. Never drags a prospect backwards in the pipeline. */
+function advance(p,s,date){
+  const ci=PIPE.indexOf(p.status);
+  if(ci<0||PIPE.indexOf(s)>ci) setStatus(p,s,date);
+  else{const k=STAMP[s];if(k)stamp(p,k,date);}
+}
+function applyResponse(p,r,date){
+  if(r==='No response') return;
+  if(r!=='Lost') stamp(p,'replied',date);
+  if(r==='Interested'||r==='Proposal requested') advance(p,'Replied',date);
+  else if(r==='Maybe later'){if(!CLOSED.includes(p.status))p.status='Follow Up Later';}
+  else if(r==='Not interested'||r==='Lost') setStatus(p,'Lost',date);
+  else if(r==='Call booked') advance(p,'Call Booked',date);
+  else if(r==='Won') setStatus(p,'Won',date);
+}
+function syncWonEvent(p){
+  const e=state.crm.events.find(x=>x.type==='won'&&x.pid===p.id);if(e)e.amount=Number(p.value)||0;
+  if(p.stamps.won&&Number(p.value)>0&&!p.financeAsked&&!pendingWon.includes(p.id))pendingWon.push(p.id);
+}
+function processWon(){
+  while(pendingWon.length){
+    const p=findProspect(pendingWon.shift());
+    if(!p||p.financeAsked||!(Number(p.value)>0))continue;
+    p.financeAsked=true;
+    if(confirm(`Deal won: ${p.name}. Add ${money(p.value)} to Finance as income today?`)){
+      state.finance.entries.push({id:uid(),date:todayKey(),type:'income',category:'Client project',amount:Number(p.value),note:p.name});
+      toast(`${money(p.value)} added to Finance.`);
+    }
+    save();render();
+  }
+}
+function reached(p,status){const k=STAMP[status];if(k&&p.stamps[k])return true;const i=PIPE.indexOf(p.status);return i>=0&&i>=PIPE.indexOf(status);}
+function lastContact(p){return p.outreach.reduce((m,o)=>o.date>m?o.date:m,'');}
+function fuCount(p){return p.outreach.filter(o=>o.type==='followup').length;}
+function followupsDue(){
+  const t=todayKey(),tm=addDays(t,1),wk=addDays(t,6);
+  const open=state.crm.prospects.filter(p=>p.nextFollowUp&&!CLOSED.includes(p.status));
+  const by=a=>a.sort((x,y)=>x.nextFollowUp.localeCompare(y.nextFollowUp));
+  return {overdue:by(open.filter(p=>p.nextFollowUp<t)),today:open.filter(p=>p.nextFollowUp===t),
+    tomorrow:open.filter(p=>p.nextFollowUp===tm),week:by(open.filter(p=>p.nextFollowUp>tm&&p.nextFollowUp<=wk))};
+}
+function crmTotals(){
+  const P=state.crm.prospects,v=p=>Number(p.value)||0,pct=(a,b)=>b?Math.round(a/b*100)+'%':'—';
+  const contacted=P.filter(p=>p.outreach.length||reached(p,'Contacted')).length;
+  const replied=P.filter(p=>reached(p,'Replied')).length,calls=P.filter(p=>reached(p,'Call Booked')).length;
+  const props=P.filter(p=>reached(p,'Proposal Sent')).length,wonP=P.filter(p=>reached(p,'Won'));
+  const wonRevenue=wonP.reduce((s,p)=>s+v(p),0),potential=P.filter(p=>!CLOSED.includes(p.status)).reduce((s,p)=>s+v(p),0);
+  return {contacted,replied,calls,props,won:wonP.length,wonRevenue,potential,pipeline:wonRevenue+potential,
+    leadReply:pct(replied,contacted),replyCall:pct(calls,replied),callProp:pct(props,calls),propClose:pct(wonP.length,props),
+    convPct:pct(wonP.length,contacted),avgDeal:wonP.length?wonRevenue/wonP.length:0};
+}
+function nicheStats(){
+  const names=[...new Set(NICHES.concat(state.crm.prospects.map(p=>p.niche).filter(Boolean)))];
+  return names.map(n=>{
+    const P=state.crm.prospects.filter(p=>p.niche===n),W=P.filter(p=>reached(p,'Won'));
+    return {n,total:P.length,qualified:P.filter(p=>reached(p,'Qualified')).length,replies:P.filter(p=>reached(p,'Replied')).length,
+      calls:P.filter(p=>reached(p,'Call Booked')).length,proposals:P.filter(p=>reached(p,'Proposal Sent')).length,
+      won:W.length,revenue:W.reduce((s,p)=>s+(Number(p.value)||0),0)};
+  }).filter(r=>r.total>0);
+}
+function filteredProspects(){
+  const f=crmFilter,t=todayKey(),q=f.q.trim().toLowerCase();
+  return state.crm.prospects.filter(p=>{
+    if(q&&![p.name,p.niche,p.location,p.notes,p.dm,p.source,p.service,p.problem,p.email,p.phone].join(' ').toLowerCase().includes(q))return false;
+    if(f.status&&p.status!==f.status)return false;
+    if(f.niche&&p.niche!==f.niche)return false;
+    if(f.source&&p.source!==f.source)return false;
+    if(f.priority&&priorityKey(p)!==f.priority)return false;
+    const s=leadScore(p);
+    if(f.score==='9'&&!(s>=9))return false;
+    if(f.score==='7'&&!(s>=7))return false;
+    if(f.score==='5'&&!(s>=5))return false;
+    if(f.score==='low'&&!(s!=null&&s<5))return false;
+    if(f.score==='none'&&s!=null)return false;
+    if(f.follow){
+      const n=p.nextFollowUp,open=n&&!CLOSED.includes(p.status);
+      if(f.follow==='none'&&open)return false;
+      if(f.follow==='overdue'&&!(open&&n<t))return false;
+      if(f.follow==='today'&&!(open&&n===t))return false;
+      if(f.follow==='week'&&!(open&&n>=t&&n<=addDays(t,6)))return false;
+    }
+    return true;
+  }).sort((a,b)=>{const sa=leadScore(a),sb=leadScore(b);return (sb==null?-1:sb)-(sa==null?-1:sa)||(a.nextFollowUp||'9').localeCompare(b.nextFollowUp||'9')||a.name.localeCompare(b.name);});
+}
+
+/* ---------- Views ---------- */
+function viewClients(){
+  const tabs=[['today','Today'],['prospects',`Prospects (${state.crm.prospects.length})`],['pipeline','Pipeline'],['insights','Insights']];
+  const body={today:()=>crmScoreboardHTML()+followupsHTML(),prospects:crmProspectsHTML,pipeline:crmPipelineHTML,insights:crmInsightsHTML}[crmTab]();
+  return `<div class="section-head"><div><h1>Client acquisition</h1><p class="muted">Find, research, qualify, audit, contact, follow up, close.</p></div>
+  <button class="btn btn-primary" data-action="prospectAdd">+ Add prospect</button></div>
+  <div class="quick-row"><button class="btn btn-sm" data-action="logOutreach">+ Log outreach</button><button class="btn btn-sm" data-action="logFollowup">+ Log follow-up</button><button class="btn btn-sm" data-action="logAudit">+ Log audit</button></div>
+  <div class="seg" role="tablist">${tabs.map(([k,l])=>`<button class="${crmTab===k?'on':''}" data-action="crmTab" data-k="${k}" role="tab" aria-selected="${crmTab===k}">${l}</button>`).join('')}</div>
+  ${body}`;
+}
+function crmScoreboardHTML(){
+  const [from,to,days]=periodRange(crmPeriod),T=state.crm.targets;
+  const tiles=CRM_METRICS.map(m=>{
+    const a=crmCount(m.key,from,to),tg=(Number(T[m.key])||0)*days;
+    const step=crmPeriod==='today'&&!m.money?`<div class="tile-step"><button class="btn btn-sm" data-action="crmManual" data-k="${m.key}" data-d="-1" aria-label="Decrease ${m.label}">−</button><button class="btn btn-sm" data-action="crmManual" data-k="${m.key}" data-d="1" aria-label="Increase ${m.label}">+</button></div>`:'';
+    return `<div class="tile${tg&&a>=tg?' hit':''}"><div class="tile-l">${m.label}</div><div class="tile-v">${m.money?money(a):a}${tg?`<span> / ${m.money?money(tg):tg}</span>`:''}</div><div class="bar"><i style="width:${tg?ratio(a,tg)*100:0}%"></i></div>${step}</div>`;
+  }).join('');
+  return `<section class="card"><div class="card-h"><h2>Scoreboard</h2><div class="seg seg-sm">${[['today','Today'],['week','Week'],['month','Month'],['total','Total']].map(([k,l])=>`<button class="${crmPeriod===k?'on':''}" data-action="crmPeriod" data-k="${k}">${l}</button>`).join('')}</div></div>
+  <div class="tiles">${tiles}</div>
+  <div class="card-foot"><span class="faint small">Counts come from what you log on prospects. Use − / + only for work done outside the list.</span><button class="link" data-action="crmTargets">Edit daily targets</button></div></section>`;
+}
+function followupsHTML(){
+  const d=followupsDue(),groups=[['overdue','Overdue'],['today','Due today'],['tomorrow','Tomorrow'],['week','Later this week']];
+  const any=groups.some(([k])=>d[k].length);
+  const row=p=>{const last=p.outreach[p.outreach.length-1],n=fuCount(p);
+    return `<div class="li"><div class="li-main"><strong>${esc(p.name)}</strong><span>${fmtDate(p.nextFollowUp)}${last?` · last via ${esc(last.method)}`:''} · ${n} follow-up${n===1?'':'s'} so far</span></div><div class="btn-row"><button class="btn btn-sm btn-primary" data-action="logFollowup" data-pid="${p.id}">Log follow-up</button><button class="btn btn-sm btn-ghost" data-action="prospectOpen" data-id="${p.id}">Open</button></div></div>`;};
+  return `<section class="card"><div class="card-h"><h2>Follow-ups due</h2>${d.overdue.length?`<span class="badge b-missed">${d.overdue.length} overdue</span>`:''}</div>
+  ${any?groups.filter(([k])=>d[k].length).map(([k,l])=>`<div class="due-group${k==='overdue'?' is-over':''}"><div class="due-h">${l}</div><div class="list">${d[k].map(row).join('')}</div></div>`).join(''):'<p class="empty">Nothing due this week. Log outreach with a follow-up date and it shows up here.</p>'}
+  <p class="faint small" style="margin-top:8px">Tracking only. Nothing is ever sent for you.</p></section>`;
+}
+function crmProspectsHTML(){
+  const f=crmFilter,sources=[...new Set(state.crm.prospects.map(p=>p.source).filter(Boolean))].sort();
+  const sel=(key,any,opts)=>`<select class="input input-sm" data-change="crmFilter" data-f="${key}" aria-label="${any}"><option value="">${any}</option>${opts.map(o=>{const [v,l]=Array.isArray(o)?o:[o,o];return `<option value="${esc(v)}"${f[key]===v?' selected':''}>${esc(l)}</option>`;}).join('')}</select>`;
+  return `<section class="card filters">
+  <input class="input" type="search" placeholder="Search name, niche, location, notes" data-bind="crmFilter" data-f="q" value="${esc(f.q)}" aria-label="Search prospects">
+  <div class="filter-grid">${sel('status','Any status',CRM_STATUSES)}${sel('niche','Any niche',NICHES)}
+  ${sel('score','Any score',[['9','9–10 · High'],['7','7+ · Good or better'],['5','5+ · Medium or better'],['low','Below 5'],['none','Unscored']])}
+  ${sel('priority','Any priority',[['high','High priority'],['good','Good prospect'],['medium','Medium'],['low','Low priority']])}
+  ${sel('follow','Any follow-up',[['overdue','Overdue'],['today','Due today'],['week','Due this week'],['none','No follow-up set']])}
+  ${sel('source','Any source',sources)}</div>
+  <div class="filter-foot"><span class="muted small" id="crmCount"></span><button class="link" data-action="crmClearFilters">Clear filters</button></div></section>
+  <div class="plist" id="prospectList"></div>`;
+}
+function statusCls(s){return s==='Won'?'won':(s==='Lost'||s==='Not a Fit')?'lost':s==='Follow Up Later'?'later':PIPE.indexOf(s)>=4?'active':'early';}
+function prospectCard(p){
+  const s=leadScore(p),c=leadClass(s),t=todayKey(),open=p.nextFollowUp&&!CLOSED.includes(p.status),over=open&&p.nextFollowUp<t;
+  return `<button class="pc pc-${c.cls}" data-action="prospectOpen" data-id="${p.id}">
+  <div class="pc-top"><div class="pc-name">${esc(p.name)}</div><span class="sp sp-${c.cls}" title="${c.label}">${s==null?'–':s}</span></div>
+  <div class="pc-sub">${esc(p.niche)}${p.location?' · '+esc(p.location):''}${c.cls==='high'?' · <b class="hi">High priority</b>':''}</div>
+  <div class="pc-foot"><span class="badge ps-${statusCls(p.status)}">${esc(p.status)}</span>${open?`<span class="${over?'due-over':'muted'}">${over?'Overdue · ':'Follow up '}${fmtDate(p.nextFollowUp,{month:'short',day:'numeric'})}</span>`:''}${Number(p.value)?`<span class="muted">${money(p.value)}</span>`:''}</div></button>`;
+}
+function renderProspectList(){
+  const el=$('#prospectList');if(!el)return;
+  const L=filteredProspects();
+  el.innerHTML=L.map(prospectCard).join('')||`<p class="empty">${state.crm.prospects.length?'No prospects match these filters.':'No prospects yet. Add the first real business you found today.'}</p>`;
+  $('#crmCount').textContent=`${L.length} of ${state.crm.prospects.length} prospects`;
+}
+function crmPipelineHTML(){
+  const P=state.crm.prospects,tot=crmTotals();
+  const counts=STAGES.map(([l,ss])=>({l,n:P.filter(p=>ss.includes(p.status)).length})),max=Math.max(1,...counts.map(c=>c.n));
+  const m=mondayOf(todayKey()),e=addDays(m,6);
+  const wk=[['researched','Added'],['qualified','Qualified'],['audited','Audited'],['outreach','Outreach'],['followup','Follow-ups'],['reply','Replies'],['call','Calls booked'],['proposal','Proposals'],['won','Deals won']];
+  const wmax=Math.max(1,...wk.map(([k])=>crmCount(k,m,e)));
+  return `<div class="stats">${stat('Total pipeline',money(tot.pipeline),'won + open deals')}${stat('Won revenue',money(tot.wonRevenue))}${stat('Potential revenue',money(tot.potential),'open deals')}${stat('Conversion rate',tot.convPct,'won ÷ contacted')}</div>
+  <section class="card"><div class="card-h"><h2>Pipeline by stage</h2><span class="muted small">${P.length} prospects</span></div>
+  <div class="funnel">${counts.map((c,i)=>`<div class="fn-row"><span>${c.l}</span><div class="fn-bar"><i style="width:${c.n/max*100}%"></i></div><span class="fn-n">${c.n}</span></div>${i<counts.length-1?'<div class="fn-arrow">↓</div>':''}`).join('')}</div>
+  <p class="faint small" style="margin-top:12px">Outside the pipeline: ${P.filter(p=>p.status==='Lost').length} lost · ${P.filter(p=>p.status==='Not a Fit').length} not a fit · ${P.filter(p=>p.status==='Follow Up Later').length} follow up later.</p></section>
+  <section class="card"><div class="card-h"><h2>This week’s movement</h2><span class="muted small">${fmtDate(m,{month:'short',day:'numeric'})} – ${fmtDate(e,{month:'short',day:'numeric'})}</span></div>
+  <div class="hbars">${wk.map(([k,l])=>{const n=crmCount(k,m,e);return `<div class="hb"><span>${l}</span><div class="bar"><i style="width:${n/wmax*100}%"></i></div><span class="mono">${n}</span></div>`;}).join('')}</div></section>`;
+}
+function crmInsightsHTML(){
+  const t=crmTotals(),N=nicheStats();
+  const cols=[['total','Leads'],['qualified','Qualified'],['replies','Replies'],['calls','Calls'],['proposals','Proposals'],['won','Won'],['revenue','Revenue']];
+  const best={};cols.forEach(([k])=>{best[k]=Math.max(0,...N.map(r=>r[k]));});
+  const lead=(k,l)=>{const r=N.filter(x=>x[k]>0).sort((a,b)=>b[k]-a[k])[0];return `<div class="leader">${l}<strong>${r?esc(r.n):'—'}</strong>${r?(k==='revenue'?money(r[k]):r[k]):'no data yet'}</div>`;};
+  return `<div class="stats">${stat('Lead → reply',t.leadReply,`${t.replied} of ${t.contacted} contacted`)}${stat('Reply → call',t.replyCall,`${t.calls} of ${t.replied} replies`)}${stat('Call → proposal',t.callProp,`${t.props} of ${t.calls} calls`)}${stat('Proposal → close',t.propClose,`${t.won} of ${t.props} proposals`)}
+  ${stat('Overall close rate',t.convPct,'won ÷ contacted')}${stat('Average deal',t.won?money(t.avgDeal):'—')}${stat('Total revenue',money(t.wonRevenue),'won deals')}${stat('Pipeline value',money(t.potential),'open deals')}</div>
+  <section class="card"><div class="card-h"><h2>Which niche deserves your time</h2></div>
+  ${N.length?`<div class="leaders">${lead('qualified','Most qualified leads')}${lead('replies','Most replies')}${lead('calls','Most calls')}${lead('proposals','Most proposals')}${lead('won','Most closed deals')}${lead('revenue','Most revenue')}</div>
+  <div class="table-wrap" style="margin-top:14px"><table class="ntable"><thead><tr><th>Niche</th>${cols.map(([,l])=>`<th>${l}</th>`).join('')}</tr></thead><tbody>
+  ${N.map(r=>`<tr><td>${esc(r.n)}</td>${cols.map(([k])=>`<td class="${best[k]>0&&r[k]===best[k]?'top':''}">${k==='revenue'?money(r[k]):r[k]}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`
+  :'<p class="empty">Add prospects with a niche and this fills in by itself.</p>'}</section>`;
+}
+function crmTodayCard(){
+  const t=todayKey(),T=state.crm.targets,c=x=>crmCount(x,t,t),due=followupsDue(),n=due.today.length+due.overdue.length;
+  const row=(l,a,tg)=>`<div><div class="mini-h"><span>${l}</span><span>${a}${tg?` / ${tg}`:''}</span></div><div class="bar"><i style="width:${tg?ratio(a,tg)*100:0}%"></i></div></div>`;
+  return `<section class="card"><div class="card-h"><h2>Client acquisition</h2><button class="link" data-action="nav" data-view="clients">Open →</button></div>
+  <div class="minis">${row('Prospects',c('researched'),T.researched)}${row('Outreach',c('outreach'),T.outreach)}${row('Follow-ups',c('followup'),T.followup)}${row('Calls booked',c('call'),T.call)}</div>
+  <p class="due-line${due.overdue.length?' is-over':''}">${n?`${n} follow-up${n>1?'s':''} due${due.overdue.length?` · ${due.overdue.length} overdue`:''}`:'No follow-ups due today.'}</p>
+  <div class="btn-row"><button class="btn btn-primary btn-sm" data-action="prospectAdd">+ Add prospect</button><button class="btn btn-sm" data-action="logOutreach">+ Log outreach</button><button class="btn btn-sm" data-action="logFollowup">+ Log follow-up</button></div></section>`;
+}
+function crmReviewHTML(k){
+  const c=x=>crmCount(x,k,k),d=getDay(k);
+  return `<section class="card"><div class="card-h"><h2>Client acquisition today</h2><button class="link" data-action="nav" data-view="clients">Open pipeline →</button></div>
+  <div class="stats">${stat('Researched',c('researched'))}${stat('Qualified',c('qualified'))}${stat('Contacted',c('outreach'))}${stat('Replied',c('reply'))}${stat('Follow-ups',c('followup'))}${stat('Calls booked',c('call'))}${stat('Proposals',c('proposal'))}${stat('Revenue',money(c('revenue')))}</div>
+  <div class="form" style="margin-top:14px">${[['crmWorked','What worked?'],['crmDidnt','What didn’t work?'],['crmImprove','What should I improve tomorrow?']].map(([q,l])=>`<label class="lbl">${l}<textarea class="input" rows="2" data-bind="review" data-q="${q}">${esc(d.review[q])}</textarea></label>`).join('')}</div></section>`;
+}
+function outreachTotal(k,d){return crmCount('outreach',k,k)+crmCount('followup',k,k)+(Number(d.counters.outreach)||0);}
+
+/* ---------- Modals ---------- */
+const optList=(opts,val)=>opts.map(o=>{const [v,l]=Array.isArray(o)?o:[o,o];return `<option value="${esc(v)}"${String(val)===String(v)?' selected':''}>${esc(l)}</option>`;}).join('');
+const fInput=(label,name,val,type='text',extra='')=>`<label class="lbl">${label}<input class="input" type="${type}" name="${name}" value="${esc(val==null?'':val)}" ${extra}></label>`;
+const fArea=(label,name,val,rows=2)=>`<label class="lbl">${label}<textarea class="input" name="${name}" rows="${rows}">${esc(val)}</textarea></label>`;
+const foot=(extra='')=>`<div class="modal-foot">${extra}<span class="spacer"></span><button type="button" class="btn" data-action="closeModal">Cancel</button><button type="submit" class="btn btn-primary">Save</button></div>`;
+const datalists=()=>`<datalist id="srcList">${LEAD_SOURCES.map(s=>`<option value="${s}">`).join('')}</datalist><datalist id="svcList"><option value="New website"><option value="Website redesign"><option value="Conversion optimization"><option value="AI automation"><option value="WhatsApp automation"><option value="Business strategy"></datalist>`;
+
+function openQuickAdd(){
+  openModal(`<h3>Add prospect</h3><form id="prospectQuick" class="form">
+  ${fInput('Business name','name','','text','required autocomplete="off"')}
+  <div class="row2"><label class="lbl">Niche<select class="input" name="niche">${optList(NICHES,'Real Estate')}</select></label>${fInput('Location','location','')}</div>
+  <div class="row2">${fInput('Lead source','source','','text','list="srcList"')}${fInput('Phone / WhatsApp','phone','','tel')}</div>
+  ${fInput('Website or social link','link','','url','placeholder="https://"')}
+  ${fInput('Potential service','service','','text','list="svcList"')}
+  ${datalists()}
+  <div class="modal-foot"><button type="button" class="btn btn-ghost" data-action="prospectQuickOpen">Add &amp; open full record</button><span class="spacer"></span><button type="submit" class="btn btn-primary">Add prospect</button></div></form>`);
+}
+function quickAdd(f){
+  const F=f.elements,name=F.name.value.trim();
+  if(!name){toast('Business name is required.','error');return null;}
+  const link=F.link.value.trim(),p=normalizeProspect({name,niche:F.niche.value,location:F.location.value.trim(),source:F.source.value.trim(),phone:F.phone.value.trim(),service:F.service.value.trim()});
+  if(link){if(/instagram\.com/i.test(link))p.instagram=link;else if(/linkedin\.com/i.test(link))p.linkedin=link;else if(/(x|twitter)\.com/i.test(link))p.x=link;else p.website=link;}
+  state.crm.prospects.push(p);crmEvent('researched',p.id,p.discovered);getDay(p.discovered);save();
+  return p;
+}
+function noProspectsModal(what){
+  openModal(`<h3>No prospects yet</h3><p class="muted">Add the business first, then log the ${what}.</p><div class="modal-actions"><span class="spacer"></span><button class="btn" data-action="closeModal">Close</button><button class="btn btn-primary" data-action="prospectAdd">+ Add prospect</button></div>`);
+}
+function openLogModal(type,pid){
+  let P=state.crm.prospects.filter(p=>!CLOSED.includes(p.status)||p.id===pid);
+  if(!P.length)return noProspectsModal(type==='followup'?'follow-up':'outreach');
+  P=P.slice().sort(type==='followup'
+    ?(a,b)=>(a.nextFollowUp||'9').localeCompare(b.nextFollowUp||'9')||a.name.localeCompare(b.name)
+    :(a,b)=>(a.outreach.length-b.outreach.length)||a.name.localeCompare(b.name));
+  const sel=findProspect(pid)||P[0],last=sel.outreach[sel.outreach.length-1];
+  openModal(`<h3>${type==='followup'?'Log follow-up':'Log outreach'}</h3><form id="outreachForm" class="form" data-type="${type}">
+  <label class="lbl">Prospect<select class="input" name="pid">${P.map(p=>`<option value="${p.id}"${p.id===sel.id?' selected':''}>${esc(p.name)}${p.nextFollowUp?` · due ${fmtDate(p.nextFollowUp,{month:'short',day:'numeric'})}`:''}</option>`).join('')}</select></label>
+  <div class="row2"><label class="lbl">Method<select class="input" name="method">${optList(METHODS,last?last.method:'WhatsApp')}</select></label>${fInput('Date','date',todayKey(),'date')}</div>
+  ${fArea('Message sent','message','',3)}
+  <div class="row2"><label class="lbl">Response so far<select class="input" name="response">${optList(RESPONSES,'No response')}</select></label>${fInput('Next follow-up','next',addDays(todayKey(),3),'date')}</div>
+  ${foot()}</form>`);
+}
+function openAuditModal(pid){
+  const P=state.crm.prospects.filter(p=>!CLOSED.includes(p.status)||p.id===pid);
+  if(!P.length)return noProspectsModal('audit');
+  const p=findProspect(pid)||P[0],a=p.audit;
+  openModal(`<h3>Log audit</h3><p class="muted small">Record what you actually found. Nothing here is generated for you.</p><form id="auditForm" class="form">
+  <label class="lbl">Prospect<select class="input" name="pid" data-change="auditPick">${P.map(x=>`<option value="${x.id}"${x.id===p.id?' selected':''}>${esc(x.name)}</option>`).join('')}</select></label>
+  ${fArea('Problem observed','a_problem',a.problem)}${fArea('Why it matters','a_why',a.why)}${fArea('Potential business impact','a_impact',a.impact)}${fArea('Recommended solution','a_solution',a.solution)}
+  <div class="row2">${fInput('Service I could provide','a_service',a.service,'text','list="svcList"')}${fInput('Estimated value','a_value',a.value||'','number','min="0" step="any" inputmode="decimal"')}</div>
+  <div class="row2">${fInput('Evidence / screenshots link','a_link',a.link,'url')}${fInput('Audit completed','a_date',a.date||todayKey(),'date')}</div>
+  ${datalists()}${foot()}</form>`);
+}
+function openTargetsModal(){
+  openModal(`<h3>Daily targets</h3><p class="muted small">Per day. Week, month and total targets are multiplied from these.</p><form id="crmTargetsForm" class="form">
+  <div class="row2">${CRM_METRICS.map(m=>fInput(m.label+(m.money?` (${esc(state.settings.currency)})`:''),'t_'+m.key,state.crm.targets[m.key],'number','min="0" step="1" inputmode="numeric"')).join('')}</div>${foot()}</form>`);
+}
+function openProspectModal(id){
+  const p=findProspect(id);if(!p)return;
+  const s=leadScore(p),c=leadClass(s);
+  const oe=p.outreach.slice().reverse().map(o=>`<div class="oe"><div class="oe-h"><strong>${o.type==='followup'?'Follow-up':'Outreach'} · ${esc(o.method)}</strong><span class="muted small">${fmtDate(o.date)}</span><button type="button" class="link btn-danger" data-action="outreachDelete" data-oid="${o.id}">Remove</button></div>
+    ${o.message?`<p class="oe-msg">${esc(o.message)}</p>`:''}
+    <div class="row2"><label class="lbl">Response<select class="input input-sm" name="o_${o.id}_response">${optList(RESPONSES,o.response||'No response')}</select></label><label class="lbl">Response date<input type="date" class="input input-sm" name="o_${o.id}_rdate" value="${o.responseDate||''}"></label></div>
+    <label class="lbl">Outcome<input class="input input-sm" name="o_${o.id}_outcome" value="${esc(o.outcome)}"></label></div>`).join('');
+  openModal(`<form id="prospectForm" class="form" data-id="${p.id}">
+  <div class="pm-head"><div><h3 class="pm-title">${esc(p.name)}</h3><p class="muted small">${esc(p.niche)} · added ${fmtDate(p.discovered)}${lastContact(p)?` · last contact ${fmtDate(lastContact(p))}`:''}</p></div><span class="sp sp-lg sp-${c.cls}" id="pmScore">${s==null?'–':s}</span></div>
+  <details class="pm-sec" open><summary>Basics</summary><div class="pm-body">
+    ${fInput('Business name','name',p.name,'text','required')}
+    <div class="row2"><label class="lbl">Niche<select class="input" name="niche">${optList(NICHES,p.niche)}</select></label>${fInput('Location','location',p.location)}</div>
+    <div class="row2"><label class="lbl">Status<select class="input" name="status">${optList(CRM_STATUSES,p.status)}</select></label><label class="lbl">Priority <span class="faint" style="font-weight:500">(auto = from score)</span><select class="input" name="priority">${optList([['auto','Auto'],['high','High'],['good','Good'],['medium','Medium'],['low','Low']],p.priority)}</select></label></div>
+    <div class="row2">${fInput('Next follow-up','nextFollowUp',p.nextFollowUp,'date')}${fInput('Estimated deal value','value',p.value||'','number','min="0" step="any" inputmode="decimal"')}</div>
+    <div class="row2">${fInput('Date discovered','discovered',p.discovered,'date')}${fInput('Lead source','source',p.source,'text','list="srcList"')}</div>
+    <div class="row2">${fInput('Decision maker','dm',p.dm)}${fInput('Their role','dmRole',p.dmRole)}</div>
+    ${fInput('Potential service','service',p.service,'text','list="svcList"')}
+    ${fArea('Problem identified','problem',p.problem)}${fArea('Evidence / notes','evidence',p.evidence)}
+  </div></details>
+  <details class="pm-sec"><summary>Contact</summary><div class="pm-body">
+    <div class="row2">${fInput('Website','website',p.website,'url')}${fInput('Instagram','instagram',p.instagram)}</div>
+    <div class="row2">${fInput('LinkedIn','linkedin',p.linkedin)}${fInput('X','x',p.x)}</div>
+    <div class="row2">${fInput('Email','email',p.email,'email')}${fInput('Phone / WhatsApp','phone',p.phone,'tel')}</div>
+  </div></details>
+  <details class="pm-sec"><summary>Qualification checklist <span class="muted" id="ckCount"></span></summary><div class="pm-body">
+    <div class="ck-grid">${CHECKLIST.map(([k,l])=>`<label class="check"><input type="checkbox" name="ck_${k}" data-change="pmLive"${p.checklist[k]?' checked':''}> ${l}</label>`).join('')}</div>
+    <p class="small muted" id="qualHint"></p><div><button type="button" class="btn btn-sm" data-action="markQualified" id="qualBtn">Mark as qualified</button></div>
+  </div></details>
+  <details class="pm-sec"><summary>Lead score</summary><div class="pm-body"><p class="small muted">Rate each from 1 (weak) to 5 (strong). Score = average × 2.</p>
+    ${LEAD_CRITERIA.map(([k,l])=>`<label class="lbl-row"><span>${l}</span><select class="input input-sm" name="ls_${k}" data-change="pmLive">${optList([['','–'],'1','2','3','4','5'],p.ratings[k]||'')}</select></label>`).join('')}
+    ${fInput('Manual score override (1–10, blank = auto)','scoreOverride',p.scoreOverride==null?'':p.scoreOverride,'number','min="1" max="10" data-change="pmLive"')}
+    <p class="small" id="lsLabel"></p>
+  </div></details>
+  <details class="pm-sec"><summary>Audit${p.audit.date?` <span class="muted">· ${fmtDate(p.audit.date)}</span>`:''}</summary><div class="pm-body">
+    ${fArea('Problem observed','a_problem',p.audit.problem)}${fArea('Why it matters','a_why',p.audit.why)}${fArea('Potential business impact','a_impact',p.audit.impact)}${fArea('Recommended solution','a_solution',p.audit.solution)}
+    <div class="row2">${fInput('Service I could provide','a_service',p.audit.service,'text','list="svcList"')}${fInput('Estimated value','a_value',p.audit.value||'','number','min="0" step="any" inputmode="decimal"')}</div>
+    <div class="row2">${fInput('Evidence / screenshots link','a_link',p.audit.link,'url')}${fInput('Audit completed','a_date',p.audit.date,'date')}</div>
+  </div></details>
+  <details class="pm-sec"${p.outreach.length?' open':''}><summary>Outreach <span class="muted">${p.outreach.length} logged · ${fuCount(p)} follow-up${fuCount(p)===1?'':'s'}</span></summary><div class="pm-body">
+    <div class="btn-row"><button type="button" class="btn btn-sm" data-action="pmLog" data-type="outreach">+ Log outreach</button><button type="button" class="btn btn-sm" data-action="pmLog" data-type="followup">+ Log follow-up</button></div>
+    ${oe||'<p class="empty">Nothing logged yet.</p>'}
+  </div></details>
+  <details class="pm-sec"><summary>Notes</summary><div class="pm-body">${fArea('','notes',p.notes,4)}</div></details>
+  ${datalists()}
+  ${foot('<button type="button" class="btn btn-ghost btn-danger" data-action="prospectDelete">Delete</button>')}</form>`);
+  pmLive();
+}
+/* Live-updates score, checklist count and the qualify button while the form is open. */
+function pmLive(){
+  const f=$('#prospectForm');if(!f)return;const F=f.elements;
+  const ratings={};LEAD_CRITERIA.forEach(([k])=>ratings[k]=F['ls_'+k].value);
+  const s=leadScore({ratings,scoreOverride:F.scoreOverride.value}),c=leadClass(s);
+  const sc=$('#pmScore');sc.textContent=s==null?'–':s;sc.className='sp sp-lg sp-'+c.cls;
+  $('#lsLabel').textContent=s==null?'Not scored yet.':`${s}/10 · ${c.label}`;
+  const ck={};CHECKLIST.forEach(([k])=>ck[k]=F['ck_'+k].checked);
+  $('#ckCount').textContent=`${CHECKLIST.filter(([k])=>ck[k]).length}/${CHECKLIST.length}`;
+  const q=canQualify(ck);$('#qualBtn').disabled=!q.ok;$('#qualHint').textContent=q.msg;
+}
+/* Reads the whole prospect form into the record. Automatic moves (audit,
+   responses) run first; an explicit status change you made wins last. */
+function saveProspectForm(f){
+  const p=findProspect(f.dataset.id);if(!p)return null;
+  const F=f.elements,today=todayKey(),orig=p.status,g=n=>F[n]?F[n].value:'';
+  const name=g('name').trim();if(!name){toast('Business name is required.','error');return null;}
+  Object.assign(p,{name,niche:g('niche'),location:g('location').trim(),priority:g('priority'),nextFollowUp:g('nextFollowUp'),
+    value:Math.max(0,parseFloat(g('value'))||0),service:g('service').trim(),discovered:g('discovered')||p.discovered,source:g('source').trim(),
+    dm:g('dm').trim(),dmRole:g('dmRole').trim(),problem:g('problem'),evidence:g('evidence'),website:g('website').trim(),
+    instagram:g('instagram').trim(),linkedin:g('linkedin').trim(),x:g('x').trim(),email:g('email').trim(),phone:g('phone').trim(),notes:g('notes')});
+  CHECKLIST.forEach(([k])=>p.checklist[k]=!!(F['ck_'+k]&&F['ck_'+k].checked));
+  LEAD_CRITERIA.forEach(([k])=>{const v=g('ls_'+k);p.ratings[k]=v?Number(v):'';});
+  const ov=g('scoreOverride');p.scoreOverride=ov===''?null:clamp(Math.round(Number(ov))||1,1,10);
+  Object.assign(p.audit,{problem:g('a_problem'),why:g('a_why'),impact:g('a_impact'),solution:g('a_solution'),service:g('a_service').trim(),
+    value:Math.max(0,parseFloat(g('a_value'))||0),link:g('a_link').trim(),date:g('a_date')});
+  if(txt(p.audit.problem)){if(!p.audit.date)p.audit.date=today;advance(p,'Audited',p.audit.date);}
+  if(!p.value&&p.audit.value)p.value=p.audit.value;
+  p.outreach.forEach(o=>{
+    const r=g(`o_${o.id}_response`);if(!r)return;
+    o.outcome=g(`o_${o.id}_outcome`);const rd=g(`o_${o.id}_rdate`);
+    if(r!==o.response){o.response=r;o.responseDate=r==='No response'?'':(rd||today);applyResponse(p,r,o.responseDate||today);}
+    else o.responseDate=rd;
+  });
+  if(g('status')&&g('status')!==orig)setStatus(p,g('status'),today);
+  syncWonEvent(p);
+  return p;
+}
+
+/* ---------- Handlers (merged into the global maps) ---------- */
+Object.assign(ACTIONS,{
+  crmTab:el=>{crmTab=el.dataset.k;renderView();},
+  crmPeriod:el=>{crmPeriod=el.dataset.k;renderView();},
+  crmManual:el=>{
+    const t=todayKey(),k=el.dataset.k,dl=Number(el.dataset.d);
+    if(dl<0&&crmCount(k,t,t)<=0)return;
+    const m=state.crm.manual[t]||(state.crm.manual[t]={});m[k]=(Number(m[k])||0)+dl;
+    getDay(t);save();renderView();refreshHeader();
+  },
+  crmTargets:()=>openTargetsModal(),
+  crmClearFilters:()=>{crmFilter=Object.assign({},EMPTY_FILTER);renderView();},
+  prospectAdd:()=>openQuickAdd(),
+  prospectQuickOpen:()=>{const p=quickAdd($('#prospectQuick'));if(p){render();openProspectModal(p.id);}},
+  prospectOpen:el=>openProspectModal(el.dataset.id),
+  prospectDelete:()=>{
+    const f=$('#prospectForm'),p=findProspect(f.dataset.id);if(!p)return;
+    if(!confirm(`Delete “${p.name}” permanently?`))return;
+    if(confirm('Also remove its logged activity from your stats?\n\nOK = remove (it was a mistake). Cancel = keep the history of work you did.'))
+      state.crm.events=state.crm.events.filter(e=>e.pid!==p.id);
+    state.crm.prospects=state.crm.prospects.filter(x=>x.id!==p.id);
+    save();closeModal();render();toast('Prospect deleted.');
+  },
+  logOutreach:el=>openLogModal('outreach',el.dataset.pid),
+  logFollowup:el=>openLogModal('followup',el.dataset.pid),
+  logAudit:el=>openAuditModal(el.dataset.pid),
+  pmLog:el=>{const p=saveProspectForm($('#prospectForm'));if(!p)return;save();openLogModal(el.dataset.type,p.id);},
+  outreachDelete:el=>{
+    const p=saveProspectForm($('#prospectForm'));if(!p)return;
+    if(!confirm('Remove this outreach entry? It will also be removed from your counts.')){save();return;}
+    p.outreach=p.outreach.filter(o=>o.id!==el.dataset.oid);
+    state.crm.events=state.crm.events.filter(e=>e.oid!==el.dataset.oid);
+    save();openProspectModal(p.id);render();
+  },
+  markQualified:()=>{
+    const f=$('#prospectForm'),p=findProspect(f.dataset.id);if(!p)return;
+    if(reached(p,'Qualified')&&p.status!=='New'&&p.status!=='Researching'){toast('Already at or past Qualified.');return;}
+    f.elements.status.value='Qualified';FORMS.prospectForm(f);
+  }
+});
+Object.assign(BINDS,{crmFilter:el=>{crmFilter[el.dataset.f]=el.value;renderProspectList();}});
+Object.assign(CHANGES,{
+  crmFilter:el=>{crmFilter[el.dataset.f]=el.value;renderProspectList();},
+  pmLive:()=>pmLive(),
+  auditPick:el=>openAuditModal(el.value)
+});
+Object.assign(FORMS,{
+  prospectQuick:f=>{const p=quickAdd(f);if(p){closeModal();render();toast(`Added ${p.name}.`);}},
+  prospectForm:f=>{if(!saveProspectForm(f))return;save();closeModal();render();toast('Prospect saved.');processWon();},
+  outreachForm:f=>{
+    const F=f.elements,p=findProspect(F.pid.value);if(!p)return;
+    const type=f.dataset.type,date=F.date.value||todayKey(),resp=F.response.value;
+    const o={id:uid(),type,method:F.method.value,date,message:F.message.value,response:resp,responseDate:resp==='No response'?'':date,outcome:''};
+    p.outreach.push(o);crmEvent(type,p.id,date,{oid:o.id});getDay(date);
+    advance(p,'Contacted',date);applyResponse(p,resp,date);
+    p.nextFollowUp=CLOSED.includes(p.status)?'':F.next.value;
+    save();closeModal();render();toast(`${type==='followup'?'Follow-up':'Outreach'} logged for ${p.name}.`);processWon();
+  },
+  auditForm:f=>{
+    const F=f.elements,p=findProspect(F.pid.value);if(!p)return;
+    if(!txt(F.a_problem.value)){toast('Write the problem you observed.','error');return;}
+    Object.assign(p.audit,{problem:F.a_problem.value,why:F.a_why.value,impact:F.a_impact.value,solution:F.a_solution.value,
+      service:F.a_service.value.trim(),value:Math.max(0,parseFloat(F.a_value.value)||0),link:F.a_link.value.trim(),date:F.a_date.value||todayKey()});
+    // These checklist items are now facts you just recorded.
+    p.checklist.problem=true;if(txt(p.audit.solution))p.checklist.solution=true;if(p.audit.link)p.checklist.evidence=true;
+    if(!p.value&&p.audit.value)p.value=p.audit.value;
+    advance(p,'Audited',p.audit.date);getDay(p.audit.date);
+    save();closeModal();render();toast(`Audit logged for ${p.name}.`);
+  },
+  crmTargetsForm:f=>{CRM_METRICS.forEach(m=>{state.crm.targets[m.key]=Math.max(0,parseFloat(f.elements['t_'+m.key].value)||0);});save();closeModal();render();toast('Targets saved.');}
+});
+
+
+/* =====================================================================
+   11. CLOCK — runs every second. Heavier work happens once per minute.
+   ===================================================================== */
+function tick(){
+  const now=new Date(),k=dateKey(now);
+  if(k!==lastTickKey){ // midnight rollover
+    if(activeDate===lastTickKey)activeDate=k;
+    lastTickKey=k;getDay(k);save();render();
+  }
+  $('#hdTime').textContent=now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',second:'2-digit'});
+  updateCountdowns(now);updateTimerUI();
+  const m=now.getHours()*60+now.getMinutes();
+  if(m!==lastMinute){
+    lastMinute=m;checkReminders(now);refreshHeader();
+    if((currentView==='today'||currentView==='schedule')&&!isEditing()&&!(modal.open))renderView();
+  }
+}
+
+/* =====================================================================
+   12. BOOT
+   ===================================================================== */
+applyTheme();
+getDay(todayKey());
+save();
+renderNav();
+route();
+lastMinute=new Date().getHours()*60+new Date().getMinutes();
+checkReminders(new Date());
+tick();
+setInterval(tick,1000);
+</script>
+</body>
+</html>
