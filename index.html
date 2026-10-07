@@ -53,6 +53,18 @@ h3{font-family:var(--serif);font-size:18px;font-weight:600;line-height:1.25}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 [hidden]{display:none!important}
 
+/* ---------- Login lock ---------- */
+body.locked .app,body.locked .bottomnav,body.locked .toasts{display:none!important}
+.lock{min-height:100vh;display:grid;place-items:center;padding:24px 16px calc(24px + env(safe-area-inset-bottom))}
+.lock-card{width:min(420px,100%);background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:28px 22px;display:grid;gap:16px}
+.lock-brand{display:flex;align-items:center;gap:12px}
+.lock-card h1{font-size:28px}
+.lock-err{color:var(--red);font-size:14px;min-height:20px;font-weight:600}
+.pw-wrap{position:relative}
+.pw-wrap .input{padding-right:70px}
+.pw-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);color:var(--accent);font-weight:600;font-size:13.5px;min-height:34px;padding:0 8px}
+.lock-note{font-size:12.5px;color:var(--faint);text-align:center;font-family:var(--serif);font-style:italic}
+
 /* =====================================================================
    LAYOUT — mobile first. Sidebar from 960px, bottom nav below that.
    ===================================================================== */
@@ -414,7 +426,21 @@ dialog::backdrop{background:rgba(0,0,0,.55)}
 .kv b{font-size:13px;color:var(--muted);font-weight:600}
 </style>
 </head>
-<body>
+<body class="locked">
+
+<!-- Login lock. Shown until the right email + password is entered. -->
+<section class="lock" id="lock" aria-label="Sign in">
+  <form class="lock-card" id="loginForm" autocomplete="on">
+    <div class="lock-brand"><span class="brand-mark">AE</span><div><strong style="font-family:var(--serif);font-size:17px">Life OS</strong><small class="muted" style="display:block;font-size:12.5px">AE Intelligence</small></div></div>
+    <div><h1>Welcome back.</h1><p class="muted" style="margin-top:4px">Sign in to open your command center.</p></div>
+    <label class="lbl">Email<input class="input" type="email" name="email" autocomplete="username" required inputmode="email"></label>
+    <label class="lbl">Password<span class="pw-wrap"><input class="input" type="password" name="password" autocomplete="current-password" required><button type="button" class="pw-toggle" data-action="togglePw">Show</button></span></label>
+    <label class="check"><input type="checkbox" name="remember" checked> Keep me signed in on this device for 30 days</label>
+    <p class="lock-err" id="loginErr" role="alert"></p>
+    <button class="btn btn-primary" type="submit" id="loginBtn" style="min-height:50px;font-size:15.5px">Sign in</button>
+    <p class="lock-note">Brick by brick. Do not restart. Return to the system.</p>
+  </form>
+</section>
 
 <div class="app">
   <!-- Desktop sidebar -->
@@ -422,6 +448,7 @@ dialog::backdrop{background:rgba(0,0,0,.55)}
     <div class="brand"><span class="brand-mark">AE</span><div><strong>Life OS</strong><small>Oct 7 → Dec 31, 2026</small></div></div>
     <nav class="side-nav" id="sideNav"></nav>
     <p class="side-quote">Brick by brick. Do not restart. Return to the system.</p>
+    <button class="btn btn-sm btn-ghost" data-action="lockNow" style="justify-self:start;margin:0 4px">Lock</button>
   </aside>
 
   <div class="main">
@@ -1326,6 +1353,9 @@ function viewData(){
     <label class="check"><input type="checkbox" data-change="reminders"${s.reminders?' checked':''}> In-page alerts at block start times (with sound)</label>
     <div class="btn-row"><button class="btn" data-action="enableNotif">Enable system notifications</button><button class="btn" data-action="testNotif">Send test reminder</button></div>
     <div class="list">${state.template.slice().sort(byStart).map(t=>`<label class="li check"><span class="li-main"><strong>${esc(t.name)}</strong><span class="mono">${fmt12(t.start)}</span></span><input type="checkbox" data-change="tplRemind" data-id="${t.id}"${t.remind?' checked':''}></label>`).join('')}</div></section>
+  <section class="card form"><div class="card-h" style="margin:0"><h2>Security</h2></div>
+    <p class="muted small">A privacy lock for this device, not bank-grade security: anyone with technical access to this browser can still read its stored data. Back up regularly.</p>
+    <div class="btn-row"><button class="btn" data-action="lockNow">Lock now</button></div></section>
   <section class="card form"><div class="card-h" style="margin:0"><h2>Data</h2><span class="muted small">${size} KB in this browser</span></div>
     <p class="muted small">Your data lives only in this browser on this device. Last backup: ${s.lastBackup?fmtDate(dateKey(new Date(s.lastBackup)))+' '+fmtTime(s.lastBackup):'never'}.</p>
     <div class="btn-row"><button class="btn btn-primary" data-action="exportData">Export / backup JSON</button><button class="btn" data-action="copyData">Copy JSON</button><button class="btn" data-action="importData">Import JSON</button></div>
@@ -1619,7 +1649,7 @@ document.addEventListener('input',e=>{const fn=e.target.dataset&&BINDS[e.target.
 document.addEventListener('change',e=>{const fn=e.target.dataset&&CHANGES[e.target.dataset.change];if(fn)fn(e.target);});
 document.addEventListener('submit',e=>{const fn=FORMS[e.target.id];if(fn){e.preventDefault();fn(e.target);}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet();});
-window.addEventListener('hashchange',route);
+window.addEventListener('hashchange',()=>{if(appStarted)route();});
 
 /* =====================================================================
    10b. CLIENT ACQUISITION
@@ -2129,18 +2159,103 @@ function tick(){
   }
 }
 
+
 /* =====================================================================
-   12. BOOT
+   12. LOGIN LOCK
+   The file never contains your password. It stores only AUTH_HASH: your
+   email + password run through SHA-256 20,000 times with a salt. Login
+   repeats that on what you type and compares the results.
+
+   To change the password: open the dashboard, press F12 → Console, run
+       authHash('your@email.com', 'NewPassword')
+   and paste the result into AUTH_HASH below.
+
+   This is a privacy lock for one device. Without a server, anyone with
+   technical access to the browser can still read localStorage.
+   ===================================================================== */
+const AUTH_HASH  = 'b7ff5019f7fb2d63b977ae0e7039edd76b4b3af1d9f3868dcf865a4dbf315d66';
+const AUTH_SALT  = 'aeLifeOS.auth.v1';
+const AUTH_ITER  = 20000;
+const SESSION_KEY = 'aeLifeOS.session';
+const REMEMBER_DAYS = 30;
+
+/* Self-contained SHA-256 (works on file:// and old phones, no crypto.subtle needed). */
+const SHA_H=[],SHA_K=[];
+(()=>{let n=2;const frac=x=>((x-Math.floor(x))*4294967296)|0;
+  while(SHA_K.length<64){let p=true;for(let d=2;d*d<=n;d++)if(n%d===0){p=false;break;}
+    if(p){if(SHA_H.length<8)SHA_H.push(frac(Math.pow(n,1/2)));SHA_K.push(frac(Math.pow(n,1/3)));}n++;}})();
+function sha256hex(str){
+  const rr=(v,a)=>(v>>>a)|(v<<(32-a));
+  const u=unescape(encodeURIComponent(str)),l=u.length,bytes=new Uint8Array(l);for(let i=0;i<l;i++)bytes[i]=u.charCodeAt(i); // UTF-8 bytes, no TextEncoder needed
+  const buf=new Uint8Array(((l+9+63)>>6)<<6);buf.set(bytes);buf[l]=0x80;
+  const dv=new DataView(buf.buffer);dv.setUint32(buf.length-4,(l*8)>>>0);dv.setUint32(buf.length-8,Math.floor(l*8/4294967296));
+  const H=SHA_H.slice(),w=new Uint32Array(64);
+  for(let i=0;i<buf.length;i+=64){
+    for(let j=0;j<16;j++)w[j]=dv.getUint32(i+j*4);
+    for(let j=16;j<64;j++){const a=w[j-15],b=w[j-2];w[j]=(w[j-16]+(rr(a,7)^rr(a,18)^(a>>>3))+w[j-7]+(rr(b,17)^rr(b,19)^(b>>>10)))|0;}
+    let [a,b,c,d,e,f,g,h]=H;
+    for(let j=0;j<64;j++){
+      const t1=(h+(rr(e,6)^rr(e,11)^rr(e,25))+((e&f)^(~e&g))+SHA_K[j]+w[j])|0;
+      const t2=((rr(a,2)^rr(a,13)^rr(a,22))+((a&b)^(a&c)^(b&c)))|0;
+      h=g;g=f;f=e;e=(d+t1)|0;d=c;c=b;b=a;a=(t1+t2)|0;
+    }
+    [a,b,c,d,e,f,g,h].forEach((v,k)=>{H[k]=(H[k]+v)|0;});
+  }
+  return Array.from(H,x=>(x>>>0).toString(16).padStart(8,'0')).join('');
+}
+function authHash(email,password){
+  let h=sha256hex(AUTH_SALT+'|'+String(email).trim().toLowerCase()+'|'+password);
+  for(let i=1;i<AUTH_ITER;i++)h=sha256hex(h+AUTH_SALT);
+  return h;
+}
+/* Session token: tied to the hash, so changing the password signs out every device. */
+const sessionToken=exp=>sha256hex(AUTH_HASH+'|'+exp);
+function hasSession(){
+  try{
+    const s=JSON.parse(sessionStorage.getItem(SESSION_KEY)||localStorage.getItem(SESSION_KEY)||'null');
+    return !!(s&&s.exp>Date.now()&&s.sig===sessionToken(s.exp));
+  }catch(_){return false;}
+}
+function createSession(remember){
+  const exp=remember?Date.now()+REMEMBER_DAYS*86400000:Date.now()+12*3600000;
+  const v=JSON.stringify({exp,sig:sessionToken(exp)});
+  try{(remember?localStorage:sessionStorage).setItem(SESSION_KEY,v);}catch(_){}
+}
+function clearSession(){try{sessionStorage.removeItem(SESSION_KEY);localStorage.removeItem(SESSION_KEY);}catch(_){}}
+
+let appStarted=false;
+function startApp(){
+  if(appStarted)return;appStarted=true;
+  document.body.classList.remove('locked');$('#lock').hidden=true;
+  getDay(todayKey());save();renderNav();route();
+  lastMinute=new Date().getHours()*60+new Date().getMinutes();
+  checkReminders(new Date());tick();setInterval(tick,1000);
+}
+
+/* Brute-force brake: after 5 wrong tries, wait 30 seconds. */
+let loginFails=0,lockUntil=0;
+FORMS.loginForm=f=>{
+  const err=$('#loginErr'),btn=$('#loginBtn');
+  if(Date.now()<lockUntil){err.textContent=`Too many attempts. Wait ${Math.ceil((lockUntil-Date.now())/1000)}s.`;return;}
+  btn.disabled=true;btn.textContent='Checking…';err.textContent='';
+  setTimeout(()=>{ // lets the button repaint before the hashing work
+    const ok=authHash(f.elements.email.value,f.elements.password.value)===AUTH_HASH;
+    btn.disabled=false;btn.textContent='Sign in';
+    if(ok){loginFails=0;f.elements.password.value='';createSession(f.elements.remember.checked);startApp();return;}
+    loginFails++;f.elements.password.value='';f.elements.password.focus();
+    if(loginFails>=5){lockUntil=Date.now()+30000;loginFails=0;err.textContent='Too many attempts. Wait 30 seconds.';}
+    else err.textContent='Wrong email or password.';
+  },30);
+};
+ACTIONS.togglePw=el=>{const i=el.previousElementSibling,show=i.type==='password';i.type=show?'text':'password';el.textContent=show?'Hide':'Show';};
+ACTIONS.lockNow=()=>{save();clearSession();location.reload();};
+
+/* =====================================================================
+   13. BOOT
    ===================================================================== */
 applyTheme();
-getDay(todayKey());
-save();
-renderNav();
-route();
-lastMinute=new Date().getHours()*60+new Date().getMinutes();
-checkReminders(new Date());
-tick();
-setInterval(tick,1000);
+if(hasSession())startApp();
+else setTimeout(()=>{const e=$('#loginForm input[name=email]');if(e)e.focus();},50);
 </script>
 </body>
 </html>
