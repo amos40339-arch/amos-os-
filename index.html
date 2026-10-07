@@ -63,6 +63,10 @@ body.locked .app,body.locked .bottomnav,body.locked .toasts{display:none!importa
 .pw-wrap{position:relative}
 .pw-wrap .input{padding-right:70px}
 .pw-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);color:var(--accent);font-weight:600;font-size:13.5px;min-height:34px;padding:0 8px}
+.lock-card .seg{margin-top:2px}
+.lock-fine{font-size:12.5px;color:var(--muted);line-height:1.5}
+.who{padding:0 8px;font-size:13px;color:var(--muted);line-height:1.4}
+.who strong{display:block;color:var(--text);font-weight:650}
 .lock-note{font-size:12.5px;color:var(--faint);text-align:center;font-family:var(--serif);font-style:italic}
 
 /* =====================================================================
@@ -430,16 +434,31 @@ dialog::backdrop{background:rgba(0,0,0,.55)}
 
 <!-- Login lock. Shown until the right email + password is entered. -->
 <section class="lock" id="lock" aria-label="Sign in">
-  <form class="lock-card" id="loginForm" autocomplete="on">
+  <div class="lock-card">
     <div class="lock-brand"><span class="brand-mark">AE</span><div><strong style="font-family:var(--serif);font-size:17px">Life OS</strong><small class="muted" style="display:block;font-size:12.5px">AE Intelligence</small></div></div>
+    <div class="seg" role="tablist"><button type="button" class="on" data-action="authMode" data-k="in" id="tabIn">Sign in</button><button type="button" data-action="authMode" data-k="up" id="tabUp">Create account</button></div>
+  <form class="form" id="loginForm" autocomplete="on">
     <div><h1>Welcome back.</h1><p class="muted" style="margin-top:4px">Sign in to open your command center.</p></div>
     <label class="lbl">Email<input class="input" type="email" name="email" autocomplete="username" required inputmode="email"></label>
     <label class="lbl">Password<span class="pw-wrap"><input class="input" type="password" name="password" autocomplete="current-password" required><button type="button" class="pw-toggle" data-action="togglePw">Show</button></span></label>
     <label class="check"><input type="checkbox" name="remember" checked> Keep me signed in on this device for 30 days</label>
     <p class="lock-err" id="loginErr" role="alert"></p>
     <button class="btn btn-primary" type="submit" id="loginBtn" style="min-height:50px;font-size:15.5px">Sign in</button>
-    <p class="lock-note">Brick by brick. Do not restart. Return to the system.</p>
+    <p class="lock-fine">New here? <button type="button" class="link" data-action="authMode" data-k="up">Create an account</button></p>
   </form>
+  <form class="form" id="signupForm" autocomplete="on" hidden>
+    <div><h1>Start your 86 days.</h1><p class="muted" style="margin-top:4px">Your own dashboard, your own data, your own mission.</p></div>
+    <label class="lbl">Your name<input class="input" name="name" autocomplete="name" required maxlength="60"></label>
+    <label class="lbl">Email<input class="input" type="email" name="email" autocomplete="email" required inputmode="email"></label>
+    <label class="lbl">Password<span class="pw-wrap"><input class="input" type="password" name="password" autocomplete="new-password" required minlength="8"><button type="button" class="pw-toggle" data-action="togglePw">Show</button></span></label>
+    <label class="lbl">Confirm password<input class="input" type="password" name="confirm" autocomplete="new-password" required></label>
+    <label class="check"><input type="checkbox" name="remember" checked> Keep me signed in on this device for 30 days</label>
+    <p class="lock-fine">Your account and data are stored only in this browser, on this device. There is no password recovery, so keep your password safe and export backups.</p>
+    <p class="lock-err" id="signupErr" role="alert"></p>
+    <button class="btn btn-primary" type="submit" id="signupBtn" style="min-height:50px;font-size:15.5px">Create account</button>
+  </form>
+    <p class="lock-note">Brick by brick. Do not restart. Return to the system.</p>
+  </div>
 </section>
 
 <div class="app">
@@ -448,7 +467,8 @@ dialog::backdrop{background:rgba(0,0,0,.55)}
     <div class="brand"><span class="brand-mark">AE</span><div><strong>Life OS</strong><small>Oct 7 → Dec 31, 2026</small></div></div>
     <nav class="side-nav" id="sideNav"></nav>
     <p class="side-quote">Brick by brick. Do not restart. Return to the system.</p>
-    <button class="btn btn-sm btn-ghost" data-action="lockNow" style="justify-self:start;margin:0 4px">Lock</button>
+    <p class="who" id="whoAmI"></p>
+    <button class="btn btn-sm btn-ghost" data-action="lockNow" style="justify-self:start;margin:0 4px">Sign out</button>
   </aside>
 
   <div class="main">
@@ -495,6 +515,9 @@ dialog::backdrop{background:rgba(0,0,0,.55)}
    ===================================================================== */
 const STORAGE_KEY   = 'aeLifeOS.v1';      // main data
 const FIRED_KEY     = 'aeLifeOS.fired';   // which reminders already fired today
+// The signed-in account decides which keys are used (owner keeps the original keys).
+let dataKey  = STORAGE_KEY;
+let firedKey = FIRED_KEY;
 const MISSION_START = '2026-10-07';
 const MISSION_END   = '2026-12-31';
 const QUOTE         = 'Brick by brick. Do not restart. Return to the system.';
@@ -738,7 +761,8 @@ function defaultState(){
     books:[],
     journal:[],
     timer:{status:'idle',category:'business',startedAt:null,accumulated:0,sessionStart:null},
-    crm:defaultCrm()
+    crm:defaultCrm(),
+    missionText:null // null = not set yet; filled per account by applyUserDefaults()
   };
 }
 function emptyReview(){const r={focus:null};REVIEW_QS.forEach(([q])=>r[q]='');return r;}
@@ -771,6 +795,7 @@ function hydrate(p){
   s.mission=def.mission.map(a=>Object.assign(a,saved.find(x=>x&&x.key===a.key)||{}));
   s.books=Array.isArray(p.books)?p.books:[];
   s.journal=Array.isArray(p.journal)?p.journal:[];
+  s.missionText=typeof p.missionText==='string'?p.missionText:null;
   const dc=defaultCrm(),pc=(p.crm&&typeof p.crm==='object')?p.crm:{};
   s.crm={targets:Object.assign(dc.targets,pc.targets||{}),
     prospects:Array.isArray(pc.prospects)?pc.prospects.map(normalizeProspect):[],
@@ -784,19 +809,21 @@ function loadState(){
   try{
     const probe='__lifeos_probe__';
     localStorage.setItem(probe,'1');localStorage.removeItem(probe);
-    raw=localStorage.getItem(STORAGE_KEY);
+    raw=localStorage.getItem(dataKey);
   }catch(e){storageOK=false;return defaultState();}
   if(!raw) return defaultState();
   try{return hydrate(JSON.parse(raw));}
   catch(e){
     // Corrupt JSON: keep a copy instead of silently destroying it.
-    try{localStorage.setItem(STORAGE_KEY+'.corrupt.'+Date.now(),raw);}catch(_){}
+    try{localStorage.setItem(dataKey+'.corrupt.'+Date.now(),raw);}catch(_){}
     corruptRecovered=true;
     return defaultState();
   }
 }
 
-let state = loadState();
+let state = defaultState(); // real data loads in startApp(), after sign-in
+let appStarted = false;    // nothing is saved or shown until someone signs in
+let currentUser = null;
 let activeDate = todayKey();   // the day being viewed/edited (History can switch it)
 let currentView = 'today';
 let weekSel = null;
@@ -809,8 +836,8 @@ let lastMinute = -1;
 let saveTimer=null;
 function save(){
   clearTimeout(saveTimer);saveTimer=null;
-  if(!storageOK) return;
-  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}
+  if(!storageOK||!appStarted) return;
+  try{localStorage.setItem(dataKey,JSON.stringify(state));}
   catch(e){toast('Save failed: browser storage is full or blocked. Export a backup now.','error');}
 }
 function saveSoon(){clearTimeout(saveTimer);saveTimer=setTimeout(save,400);}
@@ -818,7 +845,7 @@ window.addEventListener('pagehide',save);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)save();});
 // If the dashboard is open in two tabs, keep them in sync instead of overwriting each other.
 window.addEventListener('storage',e=>{
-  if(e.key===STORAGE_KEY&&e.newValue){try{state=hydrate(JSON.parse(e.newValue));render();}catch(_){}}
+  if(appStarted&&e.key===dataKey&&e.newValue){try{state=hydrate(JSON.parse(e.newValue));render();}catch(_){}}
 });
 
 /* Day records. getDay creates one (copying the default schedule) the first
@@ -1004,8 +1031,8 @@ function notify(title,body){
     try{new Notification(title,{body,tag:title});}catch(_){}
   }
 }
-function getFired(k){try{const f=JSON.parse(localStorage.getItem(FIRED_KEY)||'{}');return f.date===k?f.ids||{}:{};}catch(_){return {};}}
-function setFired(k,ids){try{localStorage.setItem(FIRED_KEY,JSON.stringify({date:k,ids}));}catch(_){}}
+function getFired(k){try{const f=JSON.parse(localStorage.getItem(firedKey)||'{}');return f.date===k?f.ids||{}:{};}catch(_){return {};}}
+function setFired(k,ids){try{localStorage.setItem(firedKey,JSON.stringify({date:k,ids}));}catch(_){}}
 function checkReminders(now){
   if(!state.settings.reminders)return;
   const k=dateKey(now),d=state.days[k];if(!d)return;
@@ -1056,9 +1083,20 @@ function isEditing(){const a=document.activeElement;return a&&$('#view').contain
 /* =====================================================================
    8. VIEWS — each returns an HTML string for #view
    ===================================================================== */
+/* Mission text is plain text you write. Blank line = new paragraph,
+   lines starting "1." "2." … become a numbered list. */
+const MISSION_DEFAULT_TEXT=[MISSION.intro,MISSION.evidence,MISSION.lead+'\n'+MISSION.list.map((x,i)=>`${i+1}. ${x}`).join('\n'),MISSION.close1,MISSION.close2].join('\n\n');
+function missionParas(){return String(state.missionText||'').split(/\n\s*\n/).map(x=>x.trim()).filter(Boolean);}
+function missionLead(){const P=missionParas();return P.length?P[0].split('\n')[0]:'';}
+function missionClose(){const P=missionParas();return P.length>1?P[P.length-1].split('\n')[0]:'';}
 function missionHTML(){
-  return `<div class="mission-text"><p>${esc(MISSION.intro)}</p><p>${esc(MISSION.evidence)}</p><p>${esc(MISSION.lead)}</p>
-  <ol>${MISSION.list.map(x=>`<li>${esc(x)}</li>`).join('')}</ol><p>${esc(MISSION.close1)}</p><p class="close">${esc(MISSION.close2)}</p></div>`;
+  const P=missionParas();
+  if(!P.length)return '<p class="muted">No mission written yet.</p>';
+  return `<div class="mission-text">${P.map((para,i)=>{
+    let out='',list=[];const last=i===P.length-1&&P.length>1;
+    const flush=()=>{if(list.length){out+=`<ol>${list.map(x=>`<li>${esc(x)}</li>`).join('')}</ol>`;list=[];}};
+    para.split('\n').forEach(l=>{const m=l.match(/^\s*\d+[.)]\s+(.*)$/);if(m)list.push(m[1]);else{flush();if(l.trim())out+=`<p${last?' class="close"':''}>${esc(l.trim())}</p>`;}});
+    flush();return out;}).join('')}</div>`;
 }
 function focusListHTML(f){
   return `<dl class="focus-list"><div><dt>#1 priority</dt><dd>${esc(f.priority)}</dd></div><div><dt>Biggest risk</dt><dd>${esc(f.risk)}</dd></div><div><dt>First task</dt><dd>${esc(f.firstTask)}</dd></div><div><dt>One thing to avoid</dt><dd>${esc(f.avoid)}</dd></div></dl>`;
@@ -1097,7 +1135,7 @@ function viewToday(){
   const k=activeDate,isToday=k===todayKey(),d=getDay(k);
   const yk=addDays(k,-1),prev=state.days[yk];
   const hr=new Date().getHours(),greet=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening',dn=daysBetween(MISSION_START,k)+1;
-  let html=`<div class="greet"><h1>${isToday?`${greet}, ${OWNER_NAME}.`:esc(fmtDate(k,LONG))}</h1><p class="muted">${isToday?fmtDate(k,LONG):'Past day'}${dn>=1&&dn<=TOTAL_DAYS?` · Day ${dn} of ${TOTAL_DAYS}`:''}</p></div>`;
+  let html=`<div class="greet"><h1>${isToday?`${greet}, ${esc(firstName())}.`:esc(fmtDate(k,LONG))}</h1><p class="muted">${isToday?fmtDate(k,LONG):'Past day'}${dn>=1&&dn<=TOTAL_DAYS?` · Day ${dn} of ${TOTAL_DAYS}`:''}</p></div>`;
   if(yk>=MISSION_START&&(!hasData(prev)||scoreDay(prev).total<60)){
     html+=`<div class="notice"><strong>${ANTI_RESET}</strong><span>Yesterday: ${hasData(prev)?`${scoreDay(prev).total}/100`:'nothing recorded'}. It stays in your history. Today is simply the next entry.</span></div>`;
   }
@@ -1114,8 +1152,9 @@ function viewToday(){
   // Mission: the core sentence is always visible; the full list expands.
   if(isToday) html+=crmTodayCard();
   html+=`<section class="card"><div class="card-h"><h2>Mission · December 31, 2026</h2><button class="link" data-action="nav" data-view="mission">Progress →</button></div>
-  <p class="mission-lead">${esc(MISSION.intro)}</p><p class="mission-close">${esc(MISSION.close2)}</p>
-  <details style="margin-top:8px"><summary>Full mission</summary><div style="margin-top:10px">${missionHTML()}</div></details></section>`;
+  ${missionParas().length?`<p class="mission-lead">${esc(missionLead())}</p>${missionClose()?`<p class="mission-close">${esc(missionClose())}</p>`:''}
+  <details style="margin-top:8px"><summary>Full mission</summary><div style="margin-top:10px">${missionHTML()}</div></details>`
+  :`<p class="mission-lead">What do you want undeniable evidence of by December 31?</p><p class="muted" style="margin-top:6px">Write it down. Everything else in this dashboard is measured against it.</p><div style="margin-top:12px"><button class="btn btn-primary btn-sm" data-action="missionEdit">Write my mission</button></div>`}</section>`;
   return html;
 }
 
@@ -1256,7 +1295,7 @@ function viewMission(){
     <div class="cmp-row"><span>Time used</span><div class="bar"><i style="width:${timePct}%;background:var(--faint)"></i></div><span class="mono">${timePct}%</span></div>
     <div class="cmp-row"><span>Mission progress</span><div class="bar"><i id="missionBar" style="width:${overall}%"></i></div><span class="mono" id="missionOverall2">${overall}%</span></div></div>
     <p class="note">If time used keeps running ahead of progress, the plan or the effort has to change.</p></section>
-  <section class="card"><details><summary>Mission statement</summary><div style="margin-top:10px">${missionHTML()}</div></details></section>
+  <section class="card"><div class="card-h"><h2>Mission statement</h2><button class="btn btn-sm" data-action="missionEdit">${missionParas().length?'Edit':'Write mission'}</button></div>${missionHTML()}</section>
   <div class="areas">${state.mission.map(a=>`<article class="card area"><div class="card-h" style="margin:0"><h3>${esc(a.name)}</h3><span class="mono" id="ap-${a.key}">${a.progress}%</span></div>
     <div class="bar"><i id="apb-${a.key}" style="width:${a.progress}%"></i></div>
     <input type="range" min="0" max="100" step="1" value="${a.progress}" data-bind="areaProgress" data-k="${a.key}" aria-label="${esc(a.name)} progress">
@@ -1342,7 +1381,7 @@ function viewJournal(){
 }
 
 function viewData(){
-  const s=state.settings,size=(()=>{try{return ((localStorage.getItem(STORAGE_KEY)||'').length/1024).toFixed(1);}catch(_){return '?';}})();
+  const s=state.settings,size=(()=>{try{return ((localStorage.getItem(dataKey)||'').length/1024).toFixed(1);}catch(_){return '?';}})();
   const perm=!('Notification' in window)?'Not supported in this browser':({granted:'Allowed',denied:'Blocked. Re-enable it in the browser’s site settings.',default:'Not requested yet'})[Notification.permission];
   return `<div class="section-head"><div><h1>Settings & data</h1></div></div>
   <section class="card form"><div class="card-h" style="margin:0"><h2>Display</h2></div>
@@ -1353,9 +1392,7 @@ function viewData(){
     <label class="check"><input type="checkbox" data-change="reminders"${s.reminders?' checked':''}> In-page alerts at block start times (with sound)</label>
     <div class="btn-row"><button class="btn" data-action="enableNotif">Enable system notifications</button><button class="btn" data-action="testNotif">Send test reminder</button></div>
     <div class="list">${state.template.slice().sort(byStart).map(t=>`<label class="li check"><span class="li-main"><strong>${esc(t.name)}</strong><span class="mono">${fmt12(t.start)}</span></span><input type="checkbox" data-change="tplRemind" data-id="${t.id}"${t.remind?' checked':''}></label>`).join('')}</div></section>
-  <section class="card form"><div class="card-h" style="margin:0"><h2>Security</h2></div>
-    <p class="muted small">A privacy lock for this device, not bank-grade security: anyone with technical access to this browser can still read its stored data. Back up regularly.</p>
-    <div class="btn-row"><button class="btn" data-action="lockNow">Lock now</button></div></section>
+  ${accountSectionHTML()}
   <section class="card form"><div class="card-h" style="margin:0"><h2>Data</h2><span class="muted small">${size} KB in this browser</span></div>
     <p class="muted small">Your data lives only in this browser on this device. Last backup: ${s.lastBackup?fmtDate(dateKey(new Date(s.lastBackup)))+' '+fmtTime(s.lastBackup):'never'}.</p>
     <div class="btn-row"><button class="btn btn-primary" data-action="exportData">Export / backup JSON</button><button class="btn" data-action="copyData">Copy JSON</button><button class="btn" data-action="importData">Import JSON</button></div>
@@ -1499,7 +1536,7 @@ const ACTIONS={
   exportData:()=>{
     state.settings.lastBackup=new Date().toISOString();save();
     const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
-    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`life-os-backup-${todayKey()}.json`;
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`life-os-${(currentUser&&currentUser.name||'backup').toLowerCase().replace(/[^a-z0-9]+/g,'-')}-${todayKey()}.json`;
     document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
     toast('Backup downloaded. Keep it somewhere other than this computer too.');render();
   },
@@ -1513,8 +1550,8 @@ const ACTIONS={
   clearData:()=>{
     const v=prompt('This permanently deletes every day, book, entry and setting in this browser.\n\nType DELETE to confirm:');
     if(v!=='DELETE'){if(v!==null)toast('Not deleted. You must type DELETE exactly.','error');return;}
-    try{localStorage.removeItem(STORAGE_KEY);localStorage.removeItem(FIRED_KEY);}catch(_){}
-    state=defaultState();activeDate=todayKey();getDay(activeDate);save();applyTheme();render();toast('All data cleared.');
+    try{localStorage.removeItem(dataKey);localStorage.removeItem(firedKey);}catch(_){}
+    state=applyUserDefaults(defaultState());activeDate=todayKey();getDay(activeDate);save();applyTheme();render();toast('All data cleared.');
   }
 };
 
@@ -1573,8 +1610,8 @@ const CHANGES={
         if(!p||typeof p!=='object'||typeof p.days!=='object')throw new Error('Not a Life OS backup');
         const n=Object.keys(p.days).length;
         if(!confirm(`Replace ALL current data with this backup (${n} day records)? Current data will be overwritten.`))return;
-        try{localStorage.setItem(STORAGE_KEY+'.preimport',JSON.stringify(state));}catch(_){} // safety copy
-        state=hydrate(p);activeDate=todayKey();getDay(activeDate);save();applyTheme();render();toast('Backup imported.');
+        try{localStorage.setItem(dataKey+'.preimport',JSON.stringify(state));}catch(_){} // safety copy
+        state=applyUserDefaults(hydrate(p));activeDate=todayKey();getDay(activeDate);save();applyTheme();render();toast('Backup imported.');
       }catch(err){toast('Import failed: '+err.message,'error');}
       finally{el.value='';}
     };
@@ -2161,20 +2198,26 @@ function tick(){
 
 
 /* =====================================================================
-   12. LOGIN LOCK
-   The file never contains your password. It stores only AUTH_HASH: your
-   email + password run through SHA-256 20,000 times with a salt. Login
-   repeats that on what you type and compares the results.
+   12. ACCOUNTS + LOGIN
+   Two kinds of account:
+   • Owner (Amos): built into this file. Only a hash of the password is
+     stored (AUTH_HASH), never the password. Data key: 'aeLifeOS.v1'.
+   • Everyone else: created with "Create account". Saved in this browser
+     under 'aeLifeOS.accounts' with their own random salt + hash, and their
+     own data key, so accounts never see each other's data in the app.
 
-   To change the password: open the dashboard, press F12 → Console, run
-       authHash('your@email.com', 'NewPassword')
-   and paste the result into AUTH_HASH below.
+   To change the OWNER password: sign in, press F12 → Console, run
+       authHash('NewPassword')
+   and paste the result into AUTH_HASH below. Other accounts change
+   theirs in Settings & Data → Account.
 
    This is a privacy lock for one device. Without a server, anyone with
    technical access to the browser can still read localStorage.
    ===================================================================== */
-const AUTH_HASH  = 'b7ff5019f7fb2d63b977ae0e7039edd76b4b3af1d9f3868dcf865a4dbf315d66';
-const AUTH_SALT  = 'aeLifeOS.auth.v1';
+// Emails allowed to sign in (not secret). Both spellings accepted to avoid the 422/442 slip.
+const AUTH_EMAILS = ['charlestonwilliam422@gmail.com','charlestonwilliam442@gmail.com'];
+const AUTH_HASH  = 'def3ee81570c6822069143172995404deb207149b4ac092bc7ce678c8ba079d7'; // password only
+const AUTH_SALT  = 'aeLifeOS.auth.v2';
 const AUTH_ITER  = 20000;
 const SESSION_KEY = 'aeLifeOS.session';
 const REMEMBER_DAYS = 30;
@@ -2203,59 +2246,180 @@ function sha256hex(str){
   }
   return Array.from(H,x=>(x>>>0).toString(16).padStart(8,'0')).join('');
 }
-function authHash(email,password){
-  let h=sha256hex(AUTH_SALT+'|'+String(email).trim().toLowerCase()+'|'+password);
-  for(let i=1;i<AUTH_ITER;i++)h=sha256hex(h+AUTH_SALT);
+const normEmail=e=>String(e||'').replace(/\s+/g,'').toLowerCase();
+const validEmail=e=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e);
+/* Salted, iterated SHA-256. Same password + different salt = different hash. */
+function hashPw(password,salt){
+  let h=sha256hex(salt+'|'+String(password).trim()); // trim: phone keyboards add stray spaces
+  for(let i=1;i<AUTH_ITER;i++)h=sha256hex(h+salt);
   return h;
 }
-/* Session token: tied to the hash, so changing the password signs out every device. */
-const sessionToken=exp=>sha256hex(AUTH_HASH+'|'+exp);
-function hasSession(){
+function authHash(password){return hashPw(password,AUTH_SALT);} // owner helper (see comment above)
+
+/* ---------- Accounts ---------- */
+const ACCOUNTS_KEY='aeLifeOS.accounts';
+const OWNER={id:'owner',name:OWNER_NAME,email:AUTH_EMAILS[0],owner:true};
+function getAccounts(){try{const a=JSON.parse(localStorage.getItem(ACCOUNTS_KEY)||'[]');return Array.isArray(a)?a:[];}catch(_){return [];}}
+function setAccounts(a){localStorage.setItem(ACCOUNTS_KEY,JSON.stringify(a));}
+function findAccount(email){const e=normEmail(email);if(AUTH_EMAILS.includes(e))return OWNER;return getAccounts().find(a=>a.email===e)||null;}
+const accountSecret=acc=>acc.owner?AUTH_HASH:acc.hash;
+const dataKeyFor=acc=>acc.owner?STORAGE_KEY:STORAGE_KEY+'.u.'+acc.id;
+const firedKeyFor=acc=>acc.owner?FIRED_KEY:FIRED_KEY+'.u.'+acc.id;
+function checkPassword(acc,pw){return hashPw(pw,acc.owner?AUTH_SALT:acc.salt)===accountSecret(acc);}
+function randomSalt(){
+  const b=new Uint8Array(16);
+  if(window.crypto&&crypto.getRandomValues)crypto.getRandomValues(b);else for(let i=0;i<16;i++)b[i]=Math.random()*256|0;
+  return Array.from(b,x=>x.toString(16).padStart(2,'0')).join('');
+}
+const firstName=()=>((currentUser&&currentUser.name)||'').trim().split(/\s+/)[0]||'there';
+/* Owner keeps their written mission + targets; new accounts start blank and write their own. */
+function applyUserDefaults(s){
+  if(s.missionText==null){
+    s.missionText=currentUser&&currentUser.owner?MISSION_DEFAULT_TEXT:'';
+    if(!(currentUser&&currentUser.owner))s.mission.forEach(a=>{if(!a.current&&!a.notes&&!a.progress)a.target='';});
+  }
+  return s;
+}
+
+/* ---------- Sessions ----------
+   Signed with the account's own secret, so a changed password or a
+   deleted account invalidates every old session. */
+const sessionToken=(acc,exp)=>sha256hex(accountSecret(acc)+'|'+acc.id+'|'+exp);
+function sessionUser(){
   try{
     const s=JSON.parse(sessionStorage.getItem(SESSION_KEY)||localStorage.getItem(SESSION_KEY)||'null');
-    return !!(s&&s.exp>Date.now()&&s.sig===sessionToken(s.exp));
-  }catch(_){return false;}
+    if(!s||!(s.exp>Date.now()))return null;
+    const acc=s.uid==='owner'?OWNER:getAccounts().find(a=>a.id===s.uid);
+    return acc&&s.sig===sessionToken(acc,s.exp)?acc:null;
+  }catch(_){return null;}
 }
-function createSession(remember){
+function createSession(acc,remember){
+  clearSession();
   const exp=remember?Date.now()+REMEMBER_DAYS*86400000:Date.now()+12*3600000;
-  const v=JSON.stringify({exp,sig:sessionToken(exp)});
-  try{(remember?localStorage:sessionStorage).setItem(SESSION_KEY,v);}catch(_){}
+  try{(remember?localStorage:sessionStorage).setItem(SESSION_KEY,JSON.stringify({uid:acc.id,exp,sig:sessionToken(acc,exp)}));}catch(_){}
 }
 function clearSession(){try{sessionStorage.removeItem(SESSION_KEY);localStorage.removeItem(SESSION_KEY);}catch(_){}}
 
-let appStarted=false;
-function startApp(){
-  if(appStarted)return;appStarted=true;
+function startApp(acc){
+  if(appStarted)return;
+  currentUser=acc;dataKey=dataKeyFor(acc);firedKey=firedKeyFor(acc);
+  state=applyUserDefaults(loadState());          // load THIS account's data only
+  activeDate=todayKey();lastTickKey=todayKey();
+  appStarted=true;
   document.body.classList.remove('locked');$('#lock').hidden=true;
-  getDay(todayKey());save();renderNav();route();
+  $('#whoAmI').innerHTML=`<strong>${esc(acc.name)}</strong>${esc(acc.email)}`;
+  applyTheme();getDay(todayKey());save();renderNav();route();
   lastMinute=new Date().getHours()*60+new Date().getMinutes();
   checkReminders(new Date());tick();setInterval(tick,1000);
 }
 
-/* Brute-force brake: after 5 wrong tries, wait 30 seconds. */
+/* ---------- Sign in ----------
+   Brute-force brake: after 5 wrong tries, wait 30 seconds. */
 let loginFails=0,lockUntil=0;
 FORMS.loginForm=f=>{
   const err=$('#loginErr'),btn=$('#loginBtn');
   if(Date.now()<lockUntil){err.textContent=`Too many attempts. Wait ${Math.ceil((lockUntil-Date.now())/1000)}s.`;return;}
   btn.disabled=true;btn.textContent='Checking…';err.textContent='';
   setTimeout(()=>{ // lets the button repaint before the hashing work
-    const ok=authHash(f.elements.email.value,f.elements.password.value)===AUTH_HASH;
+    const acc=findAccount(f.elements.email.value);
+    const ok=!!acc&&checkPassword(acc,f.elements.password.value);
     btn.disabled=false;btn.textContent='Sign in';
-    if(ok){loginFails=0;f.elements.password.value='';createSession(f.elements.remember.checked);startApp();return;}
+    if(ok){loginFails=0;f.elements.password.value='';createSession(acc,f.elements.remember.checked);startApp(acc);return;}
     loginFails++;f.elements.password.value='';f.elements.password.focus();
     if(loginFails>=5){lockUntil=Date.now()+30000;loginFails=0;err.textContent='Too many attempts. Wait 30 seconds.';}
-    else err.textContent='Wrong email or password.';
+    else err.textContent=acc?'Wrong password. Check capital letters.':'No account with this email on this device. Check the spelling, or create an account.';
   },30);
+};
+
+/* ---------- Create account ---------- */
+FORMS.signupForm=f=>{
+  const F=f.elements,err=$('#signupErr'),btn=$('#signupBtn');
+  const name=F.name.value.trim().replace(/\s+/g,' '),email=normEmail(F.email.value),pw=F.password.value.trim();
+  const fail=m=>{err.textContent=m;};
+  if(name.length<2)return fail('Enter your name.');
+  if(!validEmail(email))return fail('Enter a valid email address.');
+  if(findAccount(email))return fail('An account with this email already exists on this device. Sign in instead.');
+  if(pw.length<8)return fail('Password must be at least 8 characters.');
+  if(!/[A-Za-z]/.test(pw)||!/\d/.test(pw))return fail('Use letters and at least one number in your password.');
+  if(pw!==F.confirm.value.trim())return fail('Passwords don’t match.');
+  err.textContent='';btn.disabled=true;btn.textContent='Creating…';
+  setTimeout(()=>{
+    const salt=randomSalt(),acc={id:uid(),name,email,salt,hash:hashPw(pw,salt),created:new Date().toISOString()};
+    try{
+      const fresh=defaultState();fresh.missionText='';fresh.mission.forEach(a=>a.target='');
+      localStorage.setItem(dataKeyFor(acc),JSON.stringify(fresh));
+      setAccounts(getAccounts().concat(acc));
+    }catch(_){btn.disabled=false;btn.textContent='Create account';return fail('Could not create the account: browser storage is blocked or full.');}
+    F.password.value='';F.confirm.value='';
+    createSession(acc,F.remember.checked);startApp(acc);
+    toast(`Welcome, ${firstName()}. Start by writing your mission.`);
+  },30);
+};
+
+/* ---------- Account settings ---------- */
+function accountSectionHTML(){
+  const u=currentUser||OWNER,others=u.owner?getAccounts():[];
+  return `<section class="card form"><div class="card-h" style="margin:0"><h2>Account</h2>${u.owner?'<span class="badge">Owner</span>':''}</div>
+    <div class="kv"><div><b>Signed in as</b>${esc(u.name)} · ${esc(u.email)}</div></div>
+    <div class="btn-row"><button class="btn" data-action="lockNow">Sign out</button></div>
+    ${u.owner?`<p class="muted small">The owner account is built into the file. To change its password, see section 12 of the code.</p>
+      <div><b class="small muted">Other accounts on this device (${others.length})</b><div class="list">${others.map(a=>`<div class="li"><div class="li-main"><strong>${esc(a.name)}</strong><span>${esc(a.email)} · joined ${fmtDate(dateKey(new Date(a.created)))}</span></div><button class="btn btn-sm btn-ghost btn-danger" data-action="removeAccount" data-id="${a.id}">Remove</button></div>`).join('')||'<p class="empty">None yet.</p>'}</div></div>`
+    :`<form id="pwForm" class="form" style="border-top:1px solid var(--border);padding-top:14px"><b class="small muted">Change password</b>
+        <label class="lbl">Current password<input class="input" type="password" name="cur" autocomplete="current-password" required></label>
+        <div class="row2"><label class="lbl">New password<input class="input" type="password" name="pw" autocomplete="new-password" required></label><label class="lbl">Confirm<input class="input" type="password" name="pw2" autocomplete="new-password" required></label></div>
+        <div><button class="btn btn-sm" type="submit">Update password</button></div></form>
+      <div style="border-top:1px solid var(--border);padding-top:14px"><button class="btn btn-danger" data-action="deleteAccount">Delete my account</button><p class="faint small" style="margin-top:6px">Deletes your account and all its data from this device. Export a backup first.</p></div>`}
+    <p class="faint small">Accounts live only in this browser. There is no server, no syncing between devices and no password recovery.</p></section>`;
+}
+FORMS.pwForm=f=>{
+  const u=currentUser,F=f.elements;if(!u||u.owner)return;
+  if(!checkPassword(u,F.cur.value)){toast('Current password is wrong.','error');return;}
+  const pw=F.pw.value.trim();
+  if(pw.length<8||!/[A-Za-z]/.test(pw)||!/\d/.test(pw)){toast('New password: 8+ characters with letters and a number.','error');return;}
+  if(pw!==F.pw2.value.trim()){toast('New passwords don’t match.','error');return;}
+  const remembered=!!localStorage.getItem(SESSION_KEY); // keep the same sign-in mode
+  const salt=randomSalt(),list=getAccounts(),acc=list.find(a=>a.id===u.id);if(!acc)return;
+  acc.salt=salt;acc.hash=hashPw(pw,salt);setAccounts(list);
+  Object.assign(currentUser,{salt:acc.salt,hash:acc.hash});
+  createSession(currentUser,remembered); // old sessions on other tabs are now invalid
+  f.reset();toast('Password updated.');
+};
+
+ACTIONS.authMode=el=>{
+  const up=el.dataset.k==='up';
+  $('#loginForm').hidden=up;$('#signupForm').hidden=!up;
+  $('#tabIn').classList.toggle('on',!up);$('#tabUp').classList.toggle('on',up);
+  const first=$(up?'#signupForm input[name=name]':'#loginForm input[name=email]');if(first)first.focus();
 };
 ACTIONS.togglePw=el=>{const i=el.previousElementSibling,show=i.type==='password';i.type=show?'text':'password';el.textContent=show?'Hide':'Show';};
 ACTIONS.lockNow=()=>{save();clearSession();location.reload();};
+ACTIONS.deleteAccount=()=>{
+  const u=currentUser;if(!u||u.owner)return;
+  if(prompt('This permanently deletes your account and ALL your data on this device.\n\nType DELETE to confirm:')!=='DELETE')return;
+  try{localStorage.removeItem(dataKeyFor(u));localStorage.removeItem(firedKeyFor(u));setAccounts(getAccounts().filter(a=>a.id!==u.id));}catch(_){}
+  appStarted=false;clearSession();location.reload();
+};
+ACTIONS.removeAccount=el=>{
+  if(!currentUser||!currentUser.owner)return;
+  const a=getAccounts().find(x=>x.id===el.dataset.id);if(!a)return;
+  if(!confirm(`Remove ${a.name}'s account and all their data from this device? This cannot be undone.`))return;
+  try{localStorage.removeItem(dataKeyFor(a));localStorage.removeItem(firedKeyFor(a));setAccounts(getAccounts().filter(x=>x.id!==a.id));}catch(_){}
+  renderView();toast('Account removed.');
+};
+
+/* ---------- Mission editor ---------- */
+ACTIONS.missionEdit=()=>{
+  openModal(`<h3>Your mission</h3><p class="muted small">What do you want undeniable evidence of by December 31? Leave a blank line between paragraphs. Lines starting with 1. 2. 3. become a numbered list.</p>
+  <form id="missionForm" class="form"><textarea class="input" name="text" rows="14" aria-label="Mission statement">${esc(state.missionText||'')}</textarea>
+  <div class="modal-foot"><span class="spacer"></span><button type="button" class="btn" data-action="closeModal">Cancel</button><button type="submit" class="btn btn-primary">Save mission</button></div></form>`);
+};
+FORMS.missionForm=f=>{state.missionText=f.elements.text.value.trim();save();closeModal();render();toast('Mission saved.');};
 
 /* =====================================================================
    13. BOOT
    ===================================================================== */
 applyTheme();
-if(hasSession())startApp();
-else setTimeout(()=>{const e=$('#loginForm input[name=email]');if(e)e.focus();},50);
+{const u=sessionUser();if(u)startApp(u);else setTimeout(()=>{const e=$('#loginForm input[name=email]');if(e)e.focus();},50);}
 </script>
 </body>
 </html>
